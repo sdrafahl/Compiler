@@ -1,0 +1,64 @@
+name:                Scanner
+version:             0.1.0.0
+github:              sdrafahl/Scanner
+license:             BSD3
+author:              Shane Drafahl
+maintainer:          shanedrafahl@gmail.com
+copyright:           2020 Shane Drafah
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on Github at <https://github.com/githubuser/Scanner#readme>
+
+dependencies:
+- base >= 4.11 && < 10
+- rio >= 0.1.12.0
+- Stack >= 0.4.0
+- optional-args >= 1.0.2
+
+ghc-options:
+- -Wall
+- -Wcompat
+- -Widentities
+- -Wincomplete-record-updates
+- -Wincomplete-uni-patterns
+- -Wpartial-fields
+- -Wredundant-constraints
+
+library:
+  source-dirs: src
+
+executables:
+  Scanner-exe:
+    main:                Main.hs
+    source-dirs:         app
+    dependencies:
+    - Scanner
+    - optparse-simple
+
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+
+tests:
+  Scanner-test:
+    main:                Spec.hs
+    source-dirs:         test
+    dependencies:
+    - Scanner
+    - hspec
+
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
