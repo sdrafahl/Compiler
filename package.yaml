@@ -24,6 +24,7 @@ dependencies:
 - rio >= 0.1.12.0
 - Stack >= 0.4.0
 - optional-args >= 1.0.2
+- ilist >= 0.4.0.0
 
 ghc-options:
 - -Wall
