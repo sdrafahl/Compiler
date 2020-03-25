@@ -1,16 +1,11 @@
+{-# LANGUAGE MultiParamTypeClasses #-}
 module RegularExpressionToNFA (
     NFA (..),
     InputCharacter (..),
     Transition (..),
     REOrNFA (..),
-    mapKleenClosure,
-    mapOrs,
-    reToNFA,
-    mapSubNFA,
-    parenSubStringRange,
-    baseNfa,
-    orNfa,
-    kleanClosureNfa
+    Conversion(..),
+    reToNFA
   ) where
 
 import Data.List
@@ -18,6 +13,8 @@ import Data.List.Index
 import Data.Char
 import Debug.Trace
 import System.IO.Unsafe
+import Conversion
+import RegularExpression
 
 type State = String
 instance Show InputCharacter where
@@ -34,7 +31,6 @@ instance Show REOrNFA where
   show (FA nfa) = show nfa
   show (NotFA inCharacter) = show inCharacter
 
-data InputCharacter = EmptyChar | Character Char deriving (Eq)
 data Transition = Transition {fromState :: State, input :: InputCharacter, toState :: State} deriving (Eq)
 data NFA = NFA {states :: [State], startState :: State, terminalStates :: [State], transitions :: [Transition]} deriving (Eq)
 data REOrNFA = FA NFA | NotFA InputCharacter deriving (Eq)
@@ -97,7 +93,7 @@ mapSubNFA (Character '(' : input) mapped =
   let test = (Character '(') : input
       subStringParen = parenSubStringRange (Character '(' : input) [] 0
       subRe = (tail (take ((length subStringParen) - 1) subStringParen))
-      nfa = reToNFA subRe
+      nfa = reToNFA (RE subRe)
       newMappedStack = mapped ++ [FA nfa]
       lengthToSkip = (length subStringParen)
       in mapSubNFA (drop lengthToSkip (Character '(' : input)) newMappedStack
@@ -137,11 +133,11 @@ mapBaseCharacters inputNfas = map (\nfaOrChar -> case nfaOrChar of
                                   (FA fa) -> fa
                                   (NotFA notFa) -> baseNfa notFa
                               ) inputNfas
-  
-reToNFA :: [InputCharacter] -> NFA
-reToNFA input = 
-  let mappedParen = mapSubNFA input []
-      mappedKlean = mapKleenClosure mappedParen
-      mappedOrs = mapOrs mappedKlean []
-      mappedBase = mapBaseCharacters mappedOrs
-      in foldr (\nfa nextNfa -> andNfa nfa nextNfa) (head mappedBase) (tail mappedBase)
+
+reToNFA :: RegEx -> NFA
+reToNFA (RE input) =
+  let mappedToNfas = mapBaseCharacters (mapOrs (mapKleenClosure (mapSubNFA input [])) [])
+  in foldr (\nfa nextNfa -> andNfa nfa nextNfa) (head mappedToNfas) (tail mappedToNfas)                              
+
+instance Conversion RegEx NFA where
+  convert re = reToNFA re
