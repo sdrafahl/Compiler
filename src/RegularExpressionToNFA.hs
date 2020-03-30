@@ -16,6 +16,7 @@ import System.IO.Unsafe
 import Conversion
 import RegularExpression
 import NFA
+import StateMachine
 
 instance Show REOrNFA where
   show (FA nfa) = show nfa
