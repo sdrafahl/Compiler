@@ -31,9 +31,10 @@ discoverDeltaSets alphaBetCharacter nfa t q workListCollection worklist =
       mabyTransitions = Map.lookup workListCollection t
       transitions = maybe [] (\trans -> trans) mabyTransitions
       newLookupTable = Map.insert workListCollection (transitions ++ [(alphaBetCharacter, toSets)]) t
-  in (case (elem toSets q) of
-        False -> (q ++ [toSets], newLookupTable, worklist ++ [toSets])
-        True -> (q, newLookupTable, worklist)
+  in (case (elem toSets q, null toSets) of
+        (_, True) -> (q, t, worklist)
+        (False, False) -> (q ++ [toSets], newLookupTable, worklist ++ [toSets])
+        (True, False) -> (q, newLookupTable, worklist)
      )
 
 getAlphabet :: NFA -> [Char]
@@ -47,7 +48,8 @@ processWorkList :: NFA -> Q -> WorkList -> T -> Alpha -> (Q, T, WorkList)
 processWorkList nfa q [] t alphaBet = (q, t, [])
 processWorkList nfa qSets workList transitionTable alpha =
   let q = (head workList)
-  in  foldr (\alphaCharacter (qSet, transitions, workl) -> discoverDeltaSets alphaCharacter nfa transitions qSet q workl) (qSets, transitionTable, workList) alpha
+      (resQ, resT, restOfTheWorklist) = (foldr (\alphaCharacter (qSet, transitions, workl) -> discoverDeltaSets alphaCharacter nfa transitions qSet q workl) (qSets, transitionTable, (tail workList)) alpha)
+  in  processWorkList nfa resQ restOfTheWorklist resT alpha
 
 convertSubsetsToDFA :: (Q, T) -> [State] -> [[State]] -> DFA
 convertSubsetsToDFA (q, t) startNfaSubbset terminalNfaSubsets =
@@ -57,14 +59,14 @@ convertSubsetsToDFA (q, t) startNfaSubbset terminalNfaSubsets =
                                                        newNfaToDFAMap = (Map.insert nfaSubset newDFAState nfaTDFAMap)
                                                    in (newdfaToNFAMap, newNfaToDFAMap, count + 1)
                                                 ) (Map.empty, Map.empty, 0) (reverse q)
-      transitions = Map.foldr (\dfaNode (transitions) ->
+      transitions = Map.foldr (\dfaNode (trans) ->
                             let nfaNeighbors = maybe [] (\b -> b) (Map.lookup (maybe [] (\a -> a) (Map.lookup dfaNode dfaToNFAMap)) t)
                                 dfaNeighborsAndCharacters = map (\(transCharacter, nfaStates) -> (transCharacter, maybe [] (\a -> a) (Map.lookup nfaStates nfaToDFAMap))) nfaNeighbors
-                            in map (\(transCharacter, dfaState) -> (Transition dfaNode transCharacter dfaState)) dfaNeighborsAndCharacters
+                            in (map (\(transCharacter, dfaState) -> (Transition dfaNode transCharacter dfaState)) dfaNeighborsAndCharacters) ++ trans
                             ) ([]) nfaToDFAMap
       newStartState = maybe [] (\a -> a) (Map.lookup startNfaSubbset nfaToDFAMap)
       newTerminalStates = map (\nfaSubset -> maybe [] (\a -> a) (Map.lookup nfaSubset nfaToDFAMap)) terminalNfaSubsets
-  in (DFA ((Map.toList nfaToDFAMap) >>= (\(sts, tns) -> sts)) newStartState newTerminalStates transitions)
+  in (DFA (map (\(dfaState, _) -> dfaState) (Map.toList dfaToNFAMap)) newStartState newTerminalStates transitions)
 
 terminalSubsets :: Q -> NFA -> [[State]]
 terminalSubsets subSets nfa = filter (\subSet -> foldr (\state result -> result || elem state (NFA.terminalStates nfa)) False subSet) subSets
