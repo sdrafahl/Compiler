@@ -1,10 +1,11 @@
-module DFAMinimization (minimizeDFA, DFAMinimization.split, splitUntilEqual) where
+module DFAMinimization (Minimization(..)) where
 
 import StateMachine
 import DFA
 import Data.Map
 import Data.List
 import Data.Set
+import Minimization
 
 type DFAPartition = [State]
 type AlphaCharacter = Char
@@ -77,14 +78,17 @@ createListOfTransitionsFromPartitions partitions dfa partMap =
 createDFAFromPartitions :: T -> DFA -> DFA
 createDFAFromPartitions partitions dfa =
   let (newStates, _, partitionToNewStateMap) = Data.List.foldr (\partition (statesNewlyCreated, count, partitionToNewStateMap) -> (statesNewlyCreated ++ [show count], count + 1, Data.Map.insert partition (show count) partitionToNewStateMap)) ([], 0, Data.Map.empty) partitions
-      newStartState = maybe "-1" (\a -> a) (Data.Map.lookup (head (Data.List.filter (\partition -> doesPartitionContainGivenStates partition [startState dfa]) partitions)) partitionToNewStateMap)
+      newStartState = maybe "-99" (\a -> a) (Data.Map.lookup (head (Data.List.filter (\partition -> doesPartitionContainGivenStates partition [startState dfa]) partitions)) partitionToNewStateMap)
       newTerminalStates = (Data.List.map (\terminalPartition -> (maybe [] (\a -> a) (Data.Map.lookup terminalPartition partitionToNewStateMap))) (Data.List.filter (\partition -> doesPartitionContainGivenStates partition (terminalStates dfa)) partitions))
       newTransitions = createListOfTransitionsFromPartitions partitions dfa partitionToNewStateMap
    in (DFA newStates newStartState newTerminalStates newTransitions)
 
 minimizeDFA :: DFA -> DFA
 minimizeDFA dfa =
-  let ts = [terminalStates dfa, Data.List.filter (\state -> not (elem state (terminalStates dfa))) (states dfa)]
+  let ts = [terminalStates dfa ,reverse (Data.List.filter (\state -> not (elem state (terminalStates dfa))) (states dfa))]
       alpha = getAlphabet dfa
       partitionsForNewDFA = splitUntilEqual ts dfa alpha []
   in  createDFAFromPartitions partitionsForNewDFA dfa
+
+instance Minimization DFA where
+  minimize dfa = minimizeDFA dfa

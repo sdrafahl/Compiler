@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE BlockArguments #-}
-module NFAtoDFA (Conversion(..), delta, processWorkList, discoverDeltaSets, startSubsets) where
+module NFAtoDFA (Conversion(..)) where
 import NFA
 import DFA
 import StateMachine
