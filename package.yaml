@@ -20,13 +20,12 @@ extra-source-files:
 description:         Please see the README on Github at <https://github.com/githubuser/Scanner#readme>
 
 dependencies:
-- base >= 4.11 && < 10
+- base >= 4.13.0.0
 - rio >= 0.1.12.0
 - Stack >= 0.4.0
 - optional-args >= 1.0.2
 - ilist >= 0.4.0.0
 - containers >= 0.6.2.1
-- Stream >= 0.4.7.2
 
 
 ghc-options:

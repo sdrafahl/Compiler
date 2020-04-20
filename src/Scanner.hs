@@ -1,59 +1,81 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
-module Scanner (Scanner(..)) where
+module Scanner () where
 
 import Data.Map
 import StateMachine
-import Data.Stream
 
-type DFATable = Map (CharCatagory, State) State
-type TokenCategory = String
-type TokenType = Map State TokenCategory
-
-type InputStream = Stream String
-type InputPosition = Int
-type FailedTable = Map (GoodOrBadState, InputPosition) Bool
-type AcceptingStates = Map State State
-type Stack = [(State, InputPosition)]
-type Tokens = [String]
+type InputCharacter = Char
 type Lexeme = String
-type IsAcceptingState = (GoodOrBadState -> Bool)
-type CharCatagory = String
-type CharCatagoryTable = Map Char CharCatagory
-type Word = String
-data GoodOrBadState = State | BadState
+type InputPosition = Integer
+type CharCategory = String
 
-nextChar :: Scanner.Word -> Maybe Char
-nextChar word = maybe Nothing (\(h, _) -> h) (uncons word)
+data InputStream = InputStream [Scanner.InputCharacter]
+data Word = Word String
+data StateStack = StateStack [(State, InputPosition)]
+data CharCatTable = CharCatTable (Map Scanner.InputCharacter CharCategory)
+data DFATransitionTable = DFATransitionTable (Map (State, CharCategory) State)
+data FailedTable = FailedTable (Map (State, InputPosition) Bool)
+data DFAacceptingStates = DFAacceptingStates (Map State Bool)
 
-safeTail :: [a] -> [a]
-safeTail list =  (maybe [] (\(_, ta) -> ta) (uncons list))
-
-append :: Lexeme -> Char -> Lexeme
-append lex inp = lex ++ [inp]
-
-getNextState :: DFATable -> CharCatagory -> GoodOrBadState -> GoodOrBadState
-getNextState table catagory currentState = maybe BadState (\a -> a) (lookup (catagory, currentState) table)
-
-searchLookupTable :: CharCatagoryTable -> Maybe Char -> CharCatagory
-searchLookupTable catTable Nothing = "No Specific Catagory"
-searchLookupTable catTable Just inputChar = maybe "No Specific Catagory" (\a -> a) (lookup inputChar catTable)
-
-readCharIntoDFA :: Scanner.Word -> DFATable -> InputPosition -> Lexeme -> FailedTable -> CharCatagoryTable -> IsAcceptingState -> Stack -> GoodOrBadState -> (InputPosition, Stack, Lexeme)
-readCharIntoDFA input dfaTable inputPosition lexeme failedTable catagoryTable isAcceptingState stateStack currentState =
-  case member (currentState, inputPosition) failedTable of
-    True -> (inputPosition, stateStack, lexeme)
+exploreDFA :: InputStream -> Lexeme -> FailedTable -> InputPosition -> State -> StateStack -> DFAacceptingStates -> CharCatTable -> DFATransitionTable -> (Lexeme, InputPosition, InputStream, StateStack)
+exploreDFA inputStream lex failedTable inputPos currentState stateStack dfaAcceptingStates charCatTable dfaTransitionTable =
+  case (hasFailed failedTable (currentState, inputPos)) of
+    True -> (lex, inputPos, inputStream, stateStack)
     False ->
-      let newStack = case (isAcceptingState currentState) of
-            True -> [(currentState, inputPosition)]
-            False -> ([(currentState, inputPosition)] ++ stateStack)
-      in readCharIntoDFA (safeTail input) dfaTable (inputPosition + 1) (append lexeme (nextChar input)) failedTable isAcceptingState newStack (getNextState dfaTable (searchLookupTable catagoryTable (nextChar input)))
+      case (nextChar inputStream) of
+        Nothing -> (lex, inputPos, inputStream, stateStack)
+        Just (inputCharacter, inputStream) ->
+          case transition dfaTransitionTable currentState (getCatagory charCatTable inputCharacter) of
+            Nothing -> (lex, inputPos, inputStream, stateStack)
+            Just toState -> exploreDFA inputStream (lex ++ [inputCharacter]) failedTable (inputPos + 1) (toState) newStateStack dfaAcceptingStates charCatTable dfaTransitionTable 
+      where newStateStack = push (case (isAcceptingState dfaAcceptingStates currentState) of
+                              True -> (StateStack [])
+                              False -> stateStack) (currentState, inputPos)
+      
+      
+          
+
+-- let newStack = push stateStack (currentState, inputPos)
+      
+--nextWord :: InputStream -> (InputStream ,Scanner.Word)
+--nextWord inputStream =
 
 
+---------------------------------------
+-- Stream Helper Functions
+---------------------------------------
+nextChar :: InputStream -> Maybe (Scanner.InputCharacter, InputStream)
+nextChar (InputStream []) = Nothing
+nextChar (InputStream listOfInputCharacters) = Just (head listOfInputCharacters, InputStream (tail listOfInputCharacters))
+
+---------------------------------------
+-- DFATransitionTable Helper Functions
+---------------------------------------
+transition :: DFATransitionTable -> State -> CharCategory -> Maybe State
+transition (DFATransitionTable dfaTransTable) fromState category = (Data.Map.lookup (fromState, category) dfaTransTable)
 
 
---nextWord :: InputStream -> DFATable 
+---------------------------------------
+-- StateStack Helper Functions
+---------------------------------------
+push :: StateStack -> (State, InputPosition) -> StateStack
+push (StateStack stateList) newStateAndPosition = (StateStack (newStateAndPosition : stateList))
 
+---------------------------------------
+-- FailedTable Helper Functions
+---------------------------------------
+hasFailed :: FailedTable -> (State, InputPosition) -> Bool
+hasFailed (FailedTable failedMap) stateAndInputPos = (member stateAndInputPos failedMap)
 
--- class Scanner where
---   isValid :: String -> Tokens
+---------------------------------------
+-- DFAacceptingStates Helper Functions
+---------------------------------------
+isAcceptingState :: DFAacceptingStates -> State -> Bool
+isAcceptingState (DFAacceptingStates lookupTable) givenState = (member givenState lookupTable)
+
+---------------------------------------
+-- CharCatTable Helper Functions
+---------------------------------------
+getCatagory :: CharCatTable -> Scanner.InputCharacter -> CharCategory
+getCatagory (CharCatTable tbl) inputChar = maybe "no specific category" (\a -> a) (Data.Map.lookup inputChar tbl)
