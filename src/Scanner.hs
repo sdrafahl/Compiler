@@ -1,18 +1,29 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
-module Scanner () where
+module Scanner (
+  nextWord,
+  InputStream(..),
+  StateStack(..),
+  CharCatTable(..),
+  DFATransitionTable(..),
+  FailedTable(..),
+  DFAacceptingStates(..),
+  TokenTypeTable(..),
+  TokenType(..),
+  GoodOrBadState(..),
+  Show(..)
+  ) where
 
 import Data.Map
 import StateMachine
 
 type InputCharacter = Char
 type Lexeme = String
-type CharactersRemovedFromStream = [Scanner.InputCharacter]
 type InputPosition = Integer
 type CharCategory = String
+type InitialState = State
 
 data InputStream = InputStream [Scanner.InputCharacter]
-data Word = Word String
 data StateStack = StateStack [(GoodOrBadState, InputPosition)]
 data CharCatTable = CharCatTable (Map Scanner.InputCharacter CharCategory)
 data DFATransitionTable = DFATransitionTable (Map (State, CharCategory) State)
@@ -22,52 +33,142 @@ data TokenTypeTable = TokenTypeTable (Map GoodOrBadState TokenType)
 data TokenType = TokenType String | BadTokenType
 data GoodOrBadState = GoodOrBadState State | BadState
 
+instance Eq GoodOrBadState where
+  (==) BadState BadState = True
+  (==) (GoodOrBadState state1) (GoodOrBadState state2) = (state1 == state2)
+  (==) _ _ = False
+  (/=) a b = not (a == b)
+
+instance Eq FailedTable where
+  (==) (FailedTable mp1) (FailedTable mp2) = mp1 == mp2
+  (/=) a b = not (a == b)
+
+instance Eq InputStream where
+  (==) (InputStream a) (InputStream b) = a == b
+  (/=) a b = not (a == b)
+
+instance Eq StateStack where
+  (==) (StateStack a) (StateStack b) = a == b
+  (/=) a b = not (a == b)
+
+instance Eq CharCatTable where
+  (==) (CharCatTable a) (CharCatTable b) = a == b
+  (/=) a b = not (a == b)
+
+instance Eq DFATransitionTable where
+  (==) (DFATransitionTable a) (DFATransitionTable b) = a == b
+  (/=) a b = not (a == b)
+
+instance Eq DFAacceptingStates where
+  (==) (DFAacceptingStates a) (DFAacceptingStates b) = a == b
+  (/=) a b = not (a == b)
+
+instance Eq TokenTypeTable where
+  (==) (TokenTypeTable a) (TokenTypeTable b) = a == b
+  (/=) a b = not (a == b)
+
+instance Eq TokenType where
+  (==) (TokenType a) (TokenType b) = a == b
+  (==) BadTokenType BadTokenType = True
+  (==) _ _ = False
+  (/=) a b = not (a == b)
+
+instance Ord GoodOrBadState where
+  compare BadState BadState = EQ
+  compare (GoodOrBadState state1) (GoodOrBadState state2) = (compare state1 state2)
+  compare BadState _ = GT
+  compare _ _ = LT
+  (<=) BadState BadState = True
+  (<=) (GoodOrBadState state1) (GoodOrBadState state2) = (state1 <= state2)
+  (<=) BadState (GoodOrBadState state2) = False
+  (<=) _ _ = False
+
+instance Show FailedTable where
+  show (FailedTable tbl) = show tbl
+
+instance Show InputStream where
+  show (InputStream strm) = show strm 
+
+instance Show StateStack where
+  show (StateStack stk) = show stk
+
+instance Show CharCatTable where
+  show (CharCatTable mp) = show mp
+  
+instance Show DFATransitionTable where
+  show (DFATransitionTable mp) = show mp
+
+instance Show DFAacceptingStates where
+  show (DFAacceptingStates mp) = show mp
+
+instance Show TokenTypeTable where
+  show (TokenTypeTable tbl) = show tbl
+
+instance Show TokenType where
+  show BadTokenType = "BadTokenType"
+  show (TokenType typ) = show typ
+
+instance Show GoodOrBadState where
+  show BadState = "BadState"
+  show (GoodOrBadState state) = show state
+
+nextWord :: FailedTable -> InputStream -> InputPosition -> DFAacceptingStates -> CharCatTable -> DFATransitionTable -> InitialState -> TokenTypeTable -> Maybe (FailedTable, Lexeme, InputPosition, InputStream)
+nextWord _ (InputStream []) _ _ _ _ _ _ = Nothing
+nextWord failedTable (InputStream inputStream) inputPos dfaAcceptingStates charCatTable dfaTransTable initialState tokenTypeTable =
+  let (lex, inputPos', inputStream', stateStack) = exploreDFA (InputStream inputStream) "" failedTable 0 (GoodOrBadState initialState) (StateStack [((GoodOrBadState initialState), inputPos)]) dfaAcceptingStates charCatTable dfaTransTable
+      (tokenType, failedTable', lex', inputStream'', inputPos'') = rollBackToLongestWordInStack stateStack lex tokenTypeTable failedTable dfaAcceptingStates inputStream'
+  in  Just (failedTable', lex', inputPos'', inputStream'')
+
+
 exploreDFA :: InputStream -> Lexeme -> FailedTable -> InputPosition -> GoodOrBadState -> StateStack -> DFAacceptingStates -> CharCatTable -> DFATransitionTable -> (Lexeme, InputPosition, InputStream, StateStack)
 exploreDFA inputStream lex failedTable inputPos currentState stateStack dfaAcceptingStates charCatTable dfaTransitionTable =
   case (hasFailed failedTable (currentState, inputPos)) of
     True -> (lex, inputPos, inputStream, stateStack)
     False ->
       case (nextChar inputStream) of
-        Nothing -> (lex, inputPos, inputStream, stateStack)
-        Just (inputCharacter, inputStream) ->
+        Nothing -> (lex, inputPos, inputStream, stateStack) 
+        Just (inputCharacter, inputStream') ->
           case transition dfaTransitionTable currentState (getCatagory charCatTable inputCharacter) of
-            BadState -> (lex, inputPos, inputStream, (push stateStack (BadState, inputPos)))
-            GoodOrBadState toState -> exploreDFA inputStream (lex ++ [inputCharacter]) failedTable (inputPos + 1) (GoodOrBadState toState) newStateStack dfaAcceptingStates charCatTable dfaTransitionTable 
-      where newStateStack = push (case (isAcceptingState dfaAcceptingStates currentState) of
+            BadState -> (lex, inputPos, inputStream, (push stateStack (BadState, inputPos + 1)))
+            GoodOrBadState toState' ->
+              let newStateStack = push (case (isAcceptingState dfaAcceptingStates (GoodOrBadState toState')) of
                               True -> (StateStack [])
-                              False -> stateStack) (currentState, inputPos)
+                              False -> stateStack) (GoodOrBadState toState', inputPos + 1)
       
+              in exploreDFA inputStream' (lex ++ [inputCharacter]) failedTable (inputPos + 1) (GoodOrBadState toState') newStateStack dfaAcceptingStates charCatTable dfaTransitionTable
+            
 
             
-rollBackToLongestWordInStack :: StateStack -> Lexeme -> CharactersRemovedFromStream -> TokenTypeTable -> FailedTable -> DFAacceptingStates -> (TokenType, FailedTable, Lexeme)           
-rollBackToLongestWordInStack stateStack lex charactersRemovedFromStream tokenTypeTable failedTable acceptingStates =
+
+            
+rollBackToLongestWordInStack :: StateStack -> Lexeme  -> TokenTypeTable -> FailedTable -> DFAacceptingStates -> InputStream -> (TokenType, FailedTable, Lexeme, InputStream, InputPosition)
+rollBackToLongestWordInStack stateStack lex tokenTypeTable failedTable acceptingStates inputStream =
   case (pop stateStack) of
-    (Nothing, _) -> (BadTokenType, failedTable, lex)
+    (Nothing, _) -> (BadTokenType, failedTable, lex, inputStream, 0)
     (Just (currentState, inputPosition), newStack) ->
        case (isAcceptingState acceptingStates currentState) of
-         True -> ((lookupTokenType tokenTypeTable currentState), failedTable, lex)
-         False -> rollBackToLongestWordInStack newStack (Scanner.truncate lex) lex tokenTypeTable (markAsFailed failedTable (currentState, inputPosition)) acceptingStates
+         True -> ((lookupTokenType tokenTypeTable currentState), failedTable, lex, inputStream, inputPosition)
+         False -> case Scanner.getLast lex of
+           Just charToPutBackOnStream -> rollBackToLongestWordInStack newStack (Scanner.truncate lex) tokenTypeTable (markAsFailed failedTable (currentState, inputPosition)) acceptingStates (rollBack inputStream charToPutBackOnStream)
+           Nothing -> rollBackToLongestWordInStack newStack (Scanner.truncate lex) tokenTypeTable (markAsFailed failedTable (currentState, inputPosition)) acceptingStates inputStream
+           
       
- 
--- let newStack = push stateStack (currentState, inputPos)
-      
---nextWord :: InputStream -> (InputStream ,Scanner.Word)
---nextWord inputStream =
-
-
 
 ---------------------------------------
 -- TokenTypeTable Helper Functions
 ---------------------------------------
-lookupTokenType :: TokenTypeTable -> GoodOrBadState ->  TokenType
-lookupTokenType (TokenTypeTable tokenTypeTable) (GoodOrBadState givenState) = maybe (TokenType "no existing type") (\a -> a) (Data.Map.lookup givenState tokenTypeTable)
+lookupTokenType :: TokenTypeTable -> GoodOrBadState -> TokenType
+lookupTokenType (TokenTypeTable tokenTypeTable) givenState = maybe (TokenType "no existing type") (\a -> a) (Data.Map.lookup givenState tokenTypeTable)
 
 ---------------------------------------
 -- Lexeme Helper Functions
 ---------------------------------------
 truncate :: Lexeme -> Lexeme
 truncate [] = ""
-truncate lex = tail lex
+truncate lex = init lex
+getLast :: Lexeme -> Maybe Char
+getLast [] = Nothing
+getLast lex = Just (last lex)
 
 
 ---------------------------------------
