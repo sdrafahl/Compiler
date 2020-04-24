@@ -129,7 +129,7 @@ exploreDFA inputStream lex failedTable inputPos currentState stateStack dfaAccep
         Nothing -> (lex, inputPos, inputStream, stateStack) 
         Just (inputCharacter, inputStream') ->
           case transition dfaTransitionTable currentState (getCatagory charCatTable inputCharacter) of
-            BadState -> (lex, inputPos, inputStream, (push stateStack (BadState, inputPos + 1)))
+            BadState -> (lex ++ [inputCharacter], inputPos + 1, inputStream', (push stateStack (BadState, inputPos + 1)))
             GoodOrBadState toState' ->
               let newStateStack = push (case (isAcceptingState dfaAcceptingStates (GoodOrBadState toState')) of
                               True -> (StateStack [])
