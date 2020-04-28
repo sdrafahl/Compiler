@@ -23,94 +23,21 @@ type InputPosition = Integer
 type CharCategory = String
 type InitialState = State
 
-data InputStream = InputStream [Scanner.InputCharacter]
-data StateStack = StateStack [(GoodOrBadState, InputPosition)]
-data CharCatTable = CharCatTable (Map Scanner.InputCharacter CharCategory)
-data DFATransitionTable = DFATransitionTable (Map (State, CharCategory) State)
-data FailedTable = FailedTable (Map (State, InputPosition) Bool)
-data DFAacceptingStates = DFAacceptingStates (Map State Bool)
-data TokenTypeTable = TokenTypeTable (Map GoodOrBadState TokenType)
-data TokenType = TokenType String | BadTokenType
-data GoodOrBadState = GoodOrBadState State | BadState
-
-instance Eq GoodOrBadState where
-  (==) BadState BadState = True
-  (==) (GoodOrBadState state1) (GoodOrBadState state2) = (state1 == state2)
-  (==) _ _ = False
-  (/=) a b = not (a == b)
-
-instance Eq FailedTable where
-  (==) (FailedTable mp1) (FailedTable mp2) = mp1 == mp2
-  (/=) a b = not (a == b)
-
-instance Eq InputStream where
-  (==) (InputStream a) (InputStream b) = a == b
-  (/=) a b = not (a == b)
-
-instance Eq StateStack where
-  (==) (StateStack a) (StateStack b) = a == b
-  (/=) a b = not (a == b)
-
-instance Eq CharCatTable where
-  (==) (CharCatTable a) (CharCatTable b) = a == b
-  (/=) a b = not (a == b)
-
-instance Eq DFATransitionTable where
-  (==) (DFATransitionTable a) (DFATransitionTable b) = a == b
-  (/=) a b = not (a == b)
-
-instance Eq DFAacceptingStates where
-  (==) (DFAacceptingStates a) (DFAacceptingStates b) = a == b
-  (/=) a b = not (a == b)
-
-instance Eq TokenTypeTable where
-  (==) (TokenTypeTable a) (TokenTypeTable b) = a == b
-  (/=) a b = not (a == b)
-
-instance Eq TokenType where
-  (==) (TokenType a) (TokenType b) = a == b
-  (==) BadTokenType BadTokenType = True
-  (==) _ _ = False
-  (/=) a b = not (a == b)
-
-instance Ord GoodOrBadState where
-  compare BadState BadState = EQ
-  compare (GoodOrBadState state1) (GoodOrBadState state2) = (compare state1 state2)
-  compare BadState _ = GT
-  compare _ _ = LT
-  (<=) BadState BadState = True
-  (<=) (GoodOrBadState state1) (GoodOrBadState state2) = (state1 <= state2)
-  (<=) BadState (GoodOrBadState state2) = False
-  (<=) _ _ = False
+data InputStream = InputStream [Scanner.InputCharacter] deriving (Eq)
+data StateStack = StateStack [(GoodOrBadState, InputPosition)] deriving (Eq, Ord)
+data CharCatTable = CharCatTable (Map Scanner.InputCharacter CharCategory) deriving (Eq, Ord)
+data DFATransitionTable = DFATransitionTable (Map (State, CharCategory) State) deriving (Eq, Ord)
+data FailedTable = FailedTable (Map (State, InputPosition) Bool) deriving (Eq)
+data DFAacceptingStates = DFAacceptingStates (Map State Bool) deriving (Eq, Ord)
+data TokenTypeTable = TokenTypeTable (Map GoodOrBadState TokenType) deriving (Eq, Ord)
+data TokenType = TokenType String | BadTokenType deriving (Eq, Ord)
+data GoodOrBadState = GoodOrBadState State | BadState deriving (Eq, Ord)
 
 instance Show FailedTable where
   show (FailedTable tbl) = show tbl
 
 instance Show InputStream where
   show (InputStream strm) = show strm 
-
-instance Show StateStack where
-  show (StateStack stk) = show stk
-
-instance Show CharCatTable where
-  show (CharCatTable mp) = show mp
-  
-instance Show DFATransitionTable where
-  show (DFATransitionTable mp) = show mp
-
-instance Show DFAacceptingStates where
-  show (DFAacceptingStates mp) = show mp
-
-instance Show TokenTypeTable where
-  show (TokenTypeTable tbl) = show tbl
-
-instance Show TokenType where
-  show BadTokenType = "BadTokenType"
-  show (TokenType typ) = show typ
-
-instance Show GoodOrBadState where
-  show BadState = "BadState"
-  show (GoodOrBadState state) = show state
 
 nextWord :: FailedTable -> InputStream -> InputPosition -> DFAacceptingStates -> CharCatTable -> DFATransitionTable -> InitialState -> TokenTypeTable -> Maybe (FailedTable, Lexeme, InputPosition, InputStream)
 nextWord _ (InputStream []) _ _ _ _ _ _ = Nothing
@@ -137,9 +64,6 @@ exploreDFA inputStream lex failedTable inputPos currentState stateStack dfaAccep
       
               in exploreDFA inputStream' (lex ++ [inputCharacter]) failedTable (inputPos + 1) (GoodOrBadState toState') newStateStack dfaAcceptingStates charCatTable dfaTransitionTable
             
-
-            
-
             
 rollBackToLongestWordInStack :: StateStack -> Lexeme  -> TokenTypeTable -> FailedTable -> DFAacceptingStates -> InputStream -> (TokenType, FailedTable, Lexeme, InputStream, InputPosition)
 rollBackToLongestWordInStack stateStack lex tokenTypeTable failedTable acceptingStates inputStream =
