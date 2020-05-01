@@ -8,6 +8,7 @@ import Test.Hspec.QuickCheck
 import Scanner
 import Data.Map
 import StateMachine
+import CharCategoryTable
 
 
 spec :: Spec

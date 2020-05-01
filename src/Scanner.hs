@@ -16,16 +16,15 @@ module Scanner (
 
 import Data.Map
 import StateMachine
+import CharCategoryTable
 
-type InputCharacter = Char
 type Lexeme = String
 type InputPosition = Integer
-type CharCategory = String
+
 type InitialState = State
 
-data InputStream = InputStream [Scanner.InputCharacter] deriving (Eq)
+data InputStream = InputStream [CharCategoryTable.InputCharacter] deriving (Eq)
 data StateStack = StateStack [(GoodOrBadState, InputPosition)] deriving (Eq, Ord)
-data CharCatTable = CharCatTable (Map Scanner.InputCharacter CharCategory) deriving (Eq, Ord)
 data DFATransitionTable = DFATransitionTable (Map (State, CharCategory) State) deriving (Eq, Ord)
 data FailedTable = FailedTable (Map (State, InputPosition) Bool) deriving (Eq)
 data DFAacceptingStates = DFAacceptingStates (Map State Bool) deriving (Eq, Ord)
@@ -76,8 +75,6 @@ rollBackToLongestWordInStack stateStack lex tokenTypeTable failedTable accepting
            Just charToPutBackOnStream -> rollBackToLongestWordInStack newStack (Scanner.truncate lex) tokenTypeTable (markAsFailed failedTable (currentState, inputPosition)) acceptingStates (rollBack inputStream charToPutBackOnStream)
            Nothing -> rollBackToLongestWordInStack newStack (Scanner.truncate lex) tokenTypeTable (markAsFailed failedTable (currentState, inputPosition)) acceptingStates inputStream
            
-      
-
 ---------------------------------------
 -- TokenTypeTable Helper Functions
 ---------------------------------------
@@ -98,11 +95,11 @@ getLast lex = Just (last lex)
 ---------------------------------------
 -- Stream Helper Functions
 ---------------------------------------
-nextChar :: InputStream -> Maybe (Scanner.InputCharacter, InputStream)
+nextChar :: InputStream -> Maybe (CharCategoryTable.InputCharacter, InputStream)
 nextChar (InputStream []) = Nothing
 nextChar (InputStream listOfInputCharacters) = Just (head listOfInputCharacters, InputStream (tail listOfInputCharacters))
 
-rollBack :: InputStream -> Scanner.InputCharacter -> InputStream
+rollBack :: InputStream -> CharCategoryTable.InputCharacter -> InputStream
 rollBack (InputStream inStream) characterToPutBackOnStream = (InputStream (characterToPutBackOnStream : inStream))
 
 ---------------------------------------
@@ -145,5 +142,5 @@ isAcceptingState (DFAacceptingStates lookupTable) (GoodOrBadState givenState)  =
 ---------------------------------------
 -- CharCatTable Helper Functions
 ---------------------------------------
-getCatagory :: CharCatTable -> Scanner.InputCharacter -> CharCategory
+getCatagory :: CharCatTable -> CharCategoryTable.InputCharacter -> CharCategory
 getCatagory (CharCatTable tbl) inputChar = maybe "no specific category" (\a -> a) (Data.Map.lookup inputChar tbl)

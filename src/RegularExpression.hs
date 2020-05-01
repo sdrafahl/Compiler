@@ -2,5 +2,7 @@ module RegularExpression (
   RegEx(..)
   ) where
 
-data RegEx = RE [Char]
+import Category
+
+data RegEx = RegEx [Char] Category
 

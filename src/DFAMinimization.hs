@@ -6,6 +6,8 @@ import Data.Map
 import Data.List
 import Data.Set
 import Minimization
+import Category
+import Data.Tuple
 
 type DFAPartition = [State]
 type AlphaCharacter = Char
@@ -42,7 +44,7 @@ split dfa alphaBet partitionsInDFA partition = let isSplit = Data.List.foldr (\a
 
 
 getAlphabet :: DFA -> [Char]
-getAlphabet (DFA state startState terminalStates transitions) = (Data.Set.toList (Data.Set.fromList (Data.List.map (\(Transition from input to) -> input) transitions)))
+getAlphabet (DFA state startState terminalStates transitions _) = (Data.Set.toList (Data.Set.fromList (Data.List.map (\(Transition from input to) -> input) transitions)))
 
 splitUntilEqual :: T -> DFA -> AlphaBet -> T -> T
 splitUntilEqual ps dfa alpha ts  =
@@ -75,13 +77,38 @@ createListOfTransitionsFromPartitions partitions dfa partMap =
       transitionsPerParition = Data.List.map (\stateRep -> getTransitionsForState stateRep dfa) representatives
   in  transitionsPerParition >>= (\transitionsPerPart -> convertTransitions transitionsPerPart partitions partMap)
 
+
+
+getDFACategoryMapFromDFACategoryMap :: Map State [State] -> Map State Category -> [State] -> Map State Category
+getDFACategoryMapFromDFACategoryMap newDFAToDFAPartition nfaCategoryMap terminalStates = Data.Map.fromList (Data.List.map
+                                                                                (\(dfaState, collectionOfNFAStates) ->
+                                                                                    (case (Data.List.filter
+                                                                                           (\(_, maybeCategory) ->
+                                                                                               case maybeCategory of
+                                                                                                 Just NoCategory -> False
+                                                                                                 Just _ -> True
+                                                                                                 _ -> False
+                                                                                           ) (Data.List.map (\dfaState -> (elem dfaState terminalStates ,Data.Map.lookup dfaState nfaCategoryMap)) collectionOfNFAStates)
+                                                                                          )
+                                                                                      of
+                                                                                       [] -> (dfaState, NoCategory)
+                                                                                       categories -> (dfaState, Data.List.foldr (\(isTerminal, category) chosenSoFar -> case isTerminal of
+                                                                                                               True -> maybe NoCategory (\a -> a) category
+                                                                                                               False -> chosenSoFar
+                                                                                                               ) (maybe NoCategory (\a -> a) (snd (head categories))) categories)
+                                                                                    )) (Data.Map.toList newDFAToDFAPartition))
+
+reverseAMap :: Ord b => Ord a => Map a b -> Map b a
+reverseAMap givenMap = Data.Map.fromList (Data.List.map swap (Data.Map.toList givenMap))
+
 createDFAFromPartitions :: T -> DFA -> DFA
 createDFAFromPartitions partitions dfa =
   let (newStates, _, partitionToNewStateMap) = Data.List.foldr (\partition (statesNewlyCreated, count, partitionToNewStateMap) -> (statesNewlyCreated ++ [show count], count + 1, Data.Map.insert partition (show count) partitionToNewStateMap)) ([], 0, Data.Map.empty) partitions
       newStartState = maybe "-99" (\a -> a) (Data.Map.lookup (head (Data.List.filter (\partition -> doesPartitionContainGivenStates partition [startState dfa]) partitions)) partitionToNewStateMap)
       newTerminalStates = (Data.List.map (\terminalPartition -> (maybe [] (\a -> a) (Data.Map.lookup terminalPartition partitionToNewStateMap))) (Data.List.filter (\partition -> doesPartitionContainGivenStates partition (terminalStates dfa)) partitions))
       newTransitions = createListOfTransitionsFromPartitions partitions dfa partitionToNewStateMap
-   in (DFA newStates newStartState newTerminalStates newTransitions)
+      newCategoryMap = getDFACategoryMapFromDFACategoryMap (reverseAMap partitionToNewStateMap) (categories dfa) (terminalStates dfa) 
+   in (DFA newStates newStartState newTerminalStates newTransitions newCategoryMap)
 
 minimizeDFA :: DFA -> DFA
 minimizeDFA dfa =
