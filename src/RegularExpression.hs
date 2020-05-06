@@ -2,7 +2,7 @@ module RegularExpression (
   RegEx(..)
   ) where
 
-import Category
+import TokenType
 
-data RegEx = RegEx [Char] Category
+data RegEx = RegEx [Char] TokenType
 

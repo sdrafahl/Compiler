@@ -1,13 +1,13 @@
 module DFAMinimization (Minimization(..)) where
 
 import StateMachine
-import DFA
 import Data.Map
 import Data.List
 import Data.Set
 import Minimization
-import Category
+import TokenType
 import Data.Tuple
+import DFA
 
 type DFAPartition = [State]
 type AlphaCharacter = Char
@@ -43,9 +43,6 @@ split dfa alphaBet partitionsInDFA partition = let isSplit = Data.List.foldr (\a
                                                     (False, _) -> [partition]
 
 
-getAlphabet :: DFA -> [Char]
-getAlphabet (DFA state startState terminalStates transitions _) = (Data.Set.toList (Data.Set.fromList (Data.List.map (\(Transition from input to) -> input) transitions)))
-
 splitUntilEqual :: T -> DFA -> AlphaBet -> T -> T
 splitUntilEqual ps dfa alpha ts  =
   case ((Data.Set.fromList ts) == (Data.Set.fromList ps)) of
@@ -79,23 +76,23 @@ createListOfTransitionsFromPartitions partitions dfa partMap =
 
 
 
-getDFACategoryMapFromDFACategoryMap :: Map State [State] -> Map State Category -> [State] -> Map State Category
-getDFACategoryMapFromDFACategoryMap newDFAToDFAPartition nfaCategoryMap terminalStates = Data.Map.fromList (Data.List.map
+getDFATokenTypeMapFromDFATokenTypeMap :: Map State [State] -> Map State TokenType -> [State] -> Map State TokenType
+getDFATokenTypeMapFromDFATokenTypeMap newDFAToDFAPartition nfaTokenTypeMap terminalStates = Data.Map.fromList (Data.List.map
                                                                                 (\(dfaState, collectionOfNFAStates) ->
                                                                                     (case (Data.List.filter
-                                                                                           (\(_, maybeCategory) ->
-                                                                                               case maybeCategory of
-                                                                                                 Just NoCategory -> False
+                                                                                           (\(_, maybeTokenType) ->
+                                                                                               case maybeTokenType of
+                                                                                                 Just BadTokenType -> False
                                                                                                  Just _ -> True
                                                                                                  _ -> False
-                                                                                           ) (Data.List.map (\dfaState -> (elem dfaState terminalStates ,Data.Map.lookup dfaState nfaCategoryMap)) collectionOfNFAStates)
+                                                                                           ) (Data.List.map (\dfaState -> (elem dfaState terminalStates ,Data.Map.lookup dfaState nfaTokenTypeMap)) collectionOfNFAStates)
                                                                                           )
                                                                                       of
-                                                                                       [] -> (dfaState, NoCategory)
+                                                                                       [] -> (dfaState, BadTokenType)
                                                                                        categories -> (dfaState, Data.List.foldr (\(isTerminal, category) chosenSoFar -> case isTerminal of
-                                                                                                               True -> maybe NoCategory (\a -> a) category
+                                                                                                               True -> maybe BadTokenType (\a -> a) category
                                                                                                                False -> chosenSoFar
-                                                                                                               ) (maybe NoCategory (\a -> a) (snd (head categories))) categories)
+                                                                                                               ) (maybe BadTokenType (\a -> a) (snd (head categories))) categories)
                                                                                     )) (Data.Map.toList newDFAToDFAPartition))
 
 reverseAMap :: Ord b => Ord a => Map a b -> Map b a
@@ -107,13 +104,13 @@ createDFAFromPartitions partitions dfa =
       newStartState = maybe "-99" (\a -> a) (Data.Map.lookup (head (Data.List.filter (\partition -> doesPartitionContainGivenStates partition [startState dfa]) partitions)) partitionToNewStateMap)
       newTerminalStates = (Data.List.map (\terminalPartition -> (maybe [] (\a -> a) (Data.Map.lookup terminalPartition partitionToNewStateMap))) (Data.List.filter (\partition -> doesPartitionContainGivenStates partition (terminalStates dfa)) partitions))
       newTransitions = createListOfTransitionsFromPartitions partitions dfa partitionToNewStateMap
-      newCategoryMap = getDFACategoryMapFromDFACategoryMap (reverseAMap partitionToNewStateMap) (categories dfa) (terminalStates dfa) 
-   in (DFA newStates newStartState newTerminalStates newTransitions newCategoryMap)
+      newTokenTypeMap = getDFATokenTypeMapFromDFATokenTypeMap (reverseAMap partitionToNewStateMap) (categories dfa) (terminalStates dfa) 
+   in (DFA newStates newStartState newTerminalStates newTransitions newTokenTypeMap)
 
 minimizeDFA :: DFA -> DFA
 minimizeDFA dfa =
   let ts = [terminalStates dfa ,reverse (Data.List.filter (\state -> not (elem state (terminalStates dfa))) (states dfa))]
-      alpha = getAlphabet dfa
+      alpha = getAlphaBet dfa
       partitionsForNewDFA = splitUntilEqual ts dfa alpha []
   in  createDFAFromPartitions partitionsForNewDFA dfa
 

@@ -17,7 +17,7 @@ import Conversion
 import RegularExpression
 import NFA
 import StateMachine
-import Category
+import TokenType
 import Data.Map
 
 instance Show REOrNFA where
@@ -38,7 +38,7 @@ mapSubNFA ('(' : input) mapped =
   let test = '(' : input
       subStringParen = parenSubStringRange ('(' : input) [] 0
       subRe = (tail (Data.List.take ((length subStringParen) - 1) subStringParen))
-      nfa = reToNFA (RegEx subRe NoCategory)
+      nfa = reToNFA (RegEx subRe BadTokenType)
       newMappedStack = mapped ++ [FA nfa]
       lengthToSkip = (length subStringParen)
       in mapSubNFA (Data.List.drop lengthToSkip ('(' : input)) newMappedStack
@@ -56,9 +56,9 @@ mapAtIndices (index : indices) stack =
   let value = stack!!index
       baseNFA = (case value of
                     (FA fa) -> fa
-                    (NotFA notFa) -> baseNfa notFa NoCategory
+                    (NotFA notFa) -> baseNfa notFa BadTokenType
                 )
-      in mapAtIndices indices (setAt index (FA (kleanClosureNfa baseNFA NoCategory)) stack)
+      in mapAtIndices indices (setAt index (FA (kleanClosureNfa baseNFA BadTokenType)) stack)
 
 mapOrs :: [REOrNFA] -> [REOrNFA] -> [REOrNFA]
 mapOrs input stack
@@ -66,27 +66,27 @@ mapOrs input stack
   | (head (tail input)) == (NotFA '|') =
       let leftNfa = case (head input) of
                       (FA fa) -> fa
-                      (NotFA notFA) -> baseNfa notFA NoCategory
+                      (NotFA notFA) -> baseNfa notFA BadTokenType
           rightNfa = case (head (tail (tail input))) of
                        (FA fa) -> fa
-                       (NotFA notFA) -> baseNfa notFA NoCategory
-          in mapOrs (Data.List.drop 3 input) (FA (orNfa leftNfa rightNfa NoCategory) : stack) 
+                       (NotFA notFA) -> baseNfa notFA BadTokenType
+          in mapOrs (Data.List.drop 3 input) (FA (orNfa leftNfa rightNfa BadTokenType) : stack) 
   | otherwise = mapOrs (tail input) ((head input) : stack)
 
 mapBaseCharacters :: [REOrNFA] -> [NFA]
 mapBaseCharacters inputNfas = Data.List.map (\nfaOrChar -> case nfaOrChar of
                                   (FA fa) -> fa
-                                  (NotFA notFa) -> baseNfa notFa NoCategory
+                                  (NotFA notFa) -> baseNfa notFa BadTokenType
                               ) inputNfas
 
-addCategory :: NFA -> Category -> NFA
-addCategory (NFA states startState terminalStates  transitions  category) category' = (NFA states startState terminalStates transitions (Data.Map.fromList (zip terminalStates (replicate (length terminalStates) category'))))
+addTokenType :: NFA -> TokenType -> NFA
+addTokenType (NFA states startState terminalStates  transitions  category) category' = (NFA states startState terminalStates transitions (Data.Map.fromList (zip terminalStates (replicate (length terminalStates) category'))))
 
 reToNFA :: RegEx -> NFA
 reToNFA (RegEx input category) =
   let mappedToNfas = mapBaseCharacters (mapOrs (mapKleenClosure (mapSubNFA input [])) [])
-      combinedNFA = Data.List.foldr (\nfa nextNfa -> andNfa nfa nextNfa NoCategory) (head mappedToNfas) (tail mappedToNfas)
-  in addCategory combinedNFA category
+      combinedNFA = Data.List.foldr (\nfa nextNfa -> andNfa nfa nextNfa BadTokenType) (head mappedToNfas) (tail mappedToNfas)
+  in addTokenType combinedNFA category
 
 instance Conversion RegEx NFA where
   convert re = reToNFA re

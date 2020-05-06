@@ -10,7 +10,7 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe
 import Conversion
-import Category
+import TokenType
 import Data.List
 
 type Q = [[State]]
@@ -38,10 +38,6 @@ discoverDeltaSets alphaBetCharacter nfa t q workListCollection worklist =
         (False, False) -> (q ++ [toSets], newLookupTable, worklist ++ [toSets])
         (True, False) -> (q, newLookupTable, worklist)
      )
-
-getAlphabet :: NFA -> [Char]
-getAlphabet (NFA state startState terminalStates transitions _) = (Set.toList (Set.fromList (map (\(Transition from input to) -> convertInputCharacter input) transitions)))
-
 convertInputCharacter :: InputCharacter -> Char
 convertInputCharacter (Character ch) = ch
 convertInputCharacter EmptyChar = ' '
@@ -53,7 +49,7 @@ processWorkList nfa qSets workList transitionTable alpha =
       (resQ, resT, restOfTheWorklist) = (foldr (\alphaCharacter (qSet, transitions, workl) -> discoverDeltaSets alphaCharacter nfa transitions qSet q workl) (qSets, transitionTable, (tail workList)) alpha)
   in  processWorkList nfa resQ restOfTheWorklist resT alpha
 
-convertSubsetsToDFA :: (Q, T) -> [State] -> [[State]] -> Map State Category -> [State] -> DFA
+convertSubsetsToDFA :: (Q, T) -> [State] -> [[State]] -> Map State TokenType -> [State] -> DFA
 convertSubsetsToDFA (q, t) startNfaSubbset terminalNfaSubsets categoryMap terminalStates =
   let (dfaToNFAMap, nfaToDFAMap, count) = foldr (\nfaSubset (dfaTNFAMap, nfaTDFAMap, count) ->
                                                    let newDFAState = show count
@@ -68,26 +64,26 @@ convertSubsetsToDFA (q, t) startNfaSubbset terminalNfaSubsets categoryMap termin
                             ) ([]) nfaToDFAMap
       newStartState = maybe [] (\a -> a) (Map.lookup startNfaSubbset nfaToDFAMap)
       newTerminalStates = map (\nfaSubset -> maybe [] (\a -> a) (Map.lookup nfaSubset nfaToDFAMap)) terminalNfaSubsets
-      categoryMap' = getDFACategoryMapFromNFACategoryMap dfaToNFAMap categoryMap terminalStates
+      categoryMap' = getDFATokenTypeMapFromNFATokenTypeMap dfaToNFAMap categoryMap terminalStates
   in (DFA (map (\(dfaState, _) -> dfaState) (Map.toList dfaToNFAMap)) newStartState newTerminalStates transitions categoryMap')
 
-getDFACategoryMapFromNFACategoryMap :: Map State [State] -> Map State Category -> [State] -> Map State Category
-getDFACategoryMapFromNFACategoryMap newDFAToDFAPartition nfaCategoryMap terminalStates = Map.fromList (Data.List.map
+getDFATokenTypeMapFromNFATokenTypeMap :: Map State [State] -> Map State TokenType -> [State] -> Map State TokenType
+getDFATokenTypeMapFromNFATokenTypeMap newDFAToDFAPartition nfaTokenTypeMap terminalStates = Map.fromList (Data.List.map
                                                                                 (\(dfaState, collectionOfNFAStates) ->
                                                                                     (case (Data.List.filter
-                                                                                           (\(_, maybeCategory) ->
-                                                                                               case maybeCategory of
-                                                                                                 Just NoCategory -> False
+                                                                                           (\(_, maybeTokenType) ->
+                                                                                               case maybeTokenType of
+                                                                                                 Just BadTokenType -> False
                                                                                                  Just _ -> True
                                                                                                  _ -> False
-                                                                                           ) (Data.List.map (\nfaState -> (elem nfaState terminalStates ,Map.lookup nfaState nfaCategoryMap)) collectionOfNFAStates)
+                                                                                           ) (Data.List.map (\nfaState -> (elem nfaState terminalStates ,Map.lookup nfaState nfaTokenTypeMap)) collectionOfNFAStates)
                                                                                           )
                                                                                       of
-                                                                                       [] -> (dfaState, NoCategory)
+                                                                                       [] -> (dfaState, BadTokenType)
                                                                                        categories -> (dfaState, Data.List.foldr (\(isTerminal, category) chosenSoFar -> case isTerminal of
-                                                                                                               True -> maybe NoCategory (\a -> a) category
+                                                                                                               True -> maybe BadTokenType (\a -> a) category
                                                                                                                False -> chosenSoFar
-                                                                                                               ) (maybe NoCategory (\a -> a) (snd (head categories))) categories)
+                                                                                                               ) (maybe BadTokenType (\a -> a) (snd (head categories))) categories)
                                                                                     )) (Map.toList newDFAToDFAPartition))
 
 terminalSubsets :: Q -> NFA -> [[State]]
@@ -101,7 +97,7 @@ convertNFAToDFA nfa =
   let q0 = emptyCharClosure [NFA.startState nfa] nfa
       q = [q0]
       worklist = [q0]
-      (qConfig, transTable, work) = processWorkList nfa q worklist Map.empty (getAlphabet nfa)
+      (qConfig, transTable, work) = processWorkList nfa q worklist Map.empty (getAlphaBet nfa)
       startSubset = startSubsets qConfig nfa
       terminalSubsetsFromNFA = terminalSubsets qConfig nfa
   in  convertSubsetsToDFA (qConfig, transTable) startSubset terminalSubsetsFromNFA (NFA.categories nfa) (NFA.terminalStates nfa)

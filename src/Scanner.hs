@@ -11,26 +11,31 @@ module Scanner (
   TokenTypeTable(..),
   TokenType(..),
   GoodOrBadState(..),
-  Show(..)
+  Show(..),
+  Scanner(..)
   ) where
 
 import Data.Map
 import StateMachine
 import CharCategoryTable
+import Data.List
+import TokenType
 
 type Lexeme = String
 type InputPosition = Integer
+type Input = Char
 
 type InitialState = State
 
-data InputStream = InputStream [CharCategoryTable.InputCharacter] deriving (Eq)
-data StateStack = StateStack [(GoodOrBadState, InputPosition)] deriving (Eq, Ord)
-data DFATransitionTable = DFATransitionTable (Map (State, CharCategory) State) deriving (Eq, Ord)
+data Scanner = Scanner {dfaTransTable :: DFATransitionTable, acceptingState :: DFAacceptingStates, tokenTypeTable :: TokenTypeTable, startingState :: State, charCatTable :: Map Char CharCategory} deriving (Show, Eq)
+
+data InputStream = InputStream [Input] deriving (Eq)
+data StateStack = StateStack [(GoodOrBadState, InputPosition)] deriving (Eq, Ord, Show)
+data DFATransitionTable = DFATransitionTable (Map (State, CharCategory) State) deriving (Eq, Ord, Show)
 data FailedTable = FailedTable (Map (State, InputPosition) Bool) deriving (Eq)
-data DFAacceptingStates = DFAacceptingStates (Map State Bool) deriving (Eq, Ord)
-data TokenTypeTable = TokenTypeTable (Map GoodOrBadState TokenType) deriving (Eq, Ord)
-data TokenType = TokenType String | BadTokenType deriving (Eq, Ord)
-data GoodOrBadState = GoodOrBadState State | BadState deriving (Eq, Ord)
+data DFAacceptingStates = DFAacceptingStates (Map State Bool) deriving (Eq, Ord, Show)
+data TokenTypeTable = TokenTypeTable (Map GoodOrBadState TokenType) deriving (Eq, Ord, Show)
+data GoodOrBadState = GoodOrBadState State | BadState deriving (Eq, Ord, Show)
 
 instance Show FailedTable where
   show (FailedTable tbl) = show tbl
@@ -95,11 +100,11 @@ getLast lex = Just (last lex)
 ---------------------------------------
 -- Stream Helper Functions
 ---------------------------------------
-nextChar :: InputStream -> Maybe (CharCategoryTable.InputCharacter, InputStream)
+nextChar :: InputStream -> Maybe (Input, InputStream)
 nextChar (InputStream []) = Nothing
-nextChar (InputStream listOfInputCharacters) = Just (head listOfInputCharacters, InputStream (tail listOfInputCharacters))
+nextChar (InputStream listOfInputs) = Just (head listOfInputs, InputStream (tail listOfInputs))
 
-rollBack :: InputStream -> CharCategoryTable.InputCharacter -> InputStream
+rollBack :: InputStream -> Input -> InputStream
 rollBack (InputStream inStream) characterToPutBackOnStream = (InputStream (characterToPutBackOnStream : inStream))
 
 ---------------------------------------
@@ -130,7 +135,7 @@ hasFailed _ (BadState, _) = False
 hasFailed (FailedTable failedMap) ((GoodOrBadState state), inputPosition) = (member (state, inputPosition) failedMap)
 markAsFailed :: FailedTable -> (GoodOrBadState, InputPosition) -> FailedTable
 markAsFailed failedTable (BadState, _) = failedTable
-markAsFailed (FailedTable failedMap) ((GoodOrBadState state), inputPosition) = (FailedTable (insert (state, inputPosition) True failedMap))
+markAsFailed (FailedTable failedMap) ((GoodOrBadState state), inputPosition) = (FailedTable (Data.Map.insert (state, inputPosition) True failedMap))
 
 ---------------------------------------
 -- DFAacceptingStates Helper Functions
@@ -142,5 +147,5 @@ isAcceptingState (DFAacceptingStates lookupTable) (GoodOrBadState givenState)  =
 ---------------------------------------
 -- CharCatTable Helper Functions
 ---------------------------------------
-getCatagory :: CharCatTable -> CharCategoryTable.InputCharacter -> CharCategory
+getCatagory :: CharCatTable -> Input -> CharCategory
 getCatagory (CharCatTable tbl) inputChar = maybe "no specific category" (\a -> a) (Data.Map.lookup inputChar tbl)
