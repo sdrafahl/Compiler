@@ -19,12 +19,14 @@ createDfaTransitionTableFromNFA (DFA _ _ _ transitions _) inputCharacterToCatego
   (DFATransitionTable (fromList (Data.List.map (\(Transition fromState character toState) -> ((fromState, inputCharacterToCategory character), toState)) transitions)))
 
 convertDFAToScanner :: DFA -> (Char -> CharCategory) -> Scanner
-convertDFAToScanner (DFA states startState terminalStates transitions tokenTypeTable) charToCat = (Scanner dfaTransitionTable dfaacceptingStates tokenTypeTable' startState charCatTable 0) 
+convertDFAToScanner (DFA states startState terminalStates transitions tokenTypeTable) charToCat = (Scanner failedTable dfaTransitionTable dfaacceptingStates tokenTypeTable' startState charCatTable initialStreamPosition) 
   where dfaTransitionTable = createDfaTransitionTableFromNFA dfa charToCat
-        charCatTable =  createCharCategoryTableFromDFA dfa charToCat
+        charCatTable = (CharCatTable (createCharCategoryTableFromDFA dfa charToCat))
         dfa = (DFA states startState terminalStates transitions tokenTypeTable)
         dfaacceptingStates =  (DFAacceptingStates (fromList (Data.List.map (\state -> (state, True)) terminalStates)))
         tokenTypeTable' = (TokenTypeTable (mapKeys (\state -> GoodOrBadState state) tokenTypeTable))
+        initialStreamPosition = 0
+        failedTable = (FailedTable Data.Map.empty)
 
 
 

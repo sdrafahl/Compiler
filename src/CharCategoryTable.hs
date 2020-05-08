@@ -10,4 +10,4 @@ import Data.Map
 
 type CharCategory = String
 
-data CharCatTable = CharCatTable (Map Char CharCategory) deriving (Eq, Ord)
+data CharCatTable = CharCatTable (Map Char CharCategory) deriving (Eq, Ord, Show)
