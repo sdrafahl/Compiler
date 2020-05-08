@@ -27,7 +27,7 @@ type Input = Char
 
 type InitialState = State
 
-data Scanner = Scanner {dfaTransTable :: DFATransitionTable, acceptingState :: DFAacceptingStates, tokenTypeTable :: TokenTypeTable, startingState :: State, charCatTable :: Map Char CharCategory} deriving (Show, Eq)
+data Scanner = Scanner {dfaTransTable :: DFATransitionTable, acceptingState :: DFAacceptingStates, tokenTypeTable :: TokenTypeTable, startingState :: State, charCatTable :: Map Char CharCategory, position :: Integer} deriving (Show, Eq)
 
 data InputStream = InputStream [Input] deriving (Eq)
 data StateStack = StateStack [(GoodOrBadState, InputPosition)] deriving (Eq, Ord, Show)
