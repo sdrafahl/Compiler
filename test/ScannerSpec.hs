@@ -16,9 +16,11 @@ spec = do
   describe "Scanner" $ do
     describe "nextWord" $ do
       it "Should return nothing if given empty stream" $ nextWord (Scanner (FailedTable empty) (DFATransitionTable empty) (DFAacceptingStates empty) (TokenTypeTable empty) "testState" (CharCatTable empty) 0) (InputStream []) `shouldBe`
-        ((Scanner (FailedTable empty) (DFATransitionTable empty) (DFAacceptingStates empty) (TokenTypeTable empty) "testState" (CharCatTable empty) 0), [], InputStream [])
+        ((Scanner (FailedTable empty) (DFATransitionTable empty) (DFAacceptingStates empty) (TokenTypeTable empty) "testState" (CharCatTable empty) 0), [], InputStream [], Nothing)
 
-      it "Should return a lex for (a) input" $ nextWord (Scanner (FailedTable empty) (DFATransitionTable (insert ("testState", "testCat") "TestFinalState" empty)) (DFAacceptingStates (insert "TestFinalState" True empty)) (TokenTypeTable (insert (GoodOrBadState "TestFinalState") (TokenType "testTokenType") empty)) "testState" (CharCatTable (insert 'a' "testCat" empty)) 0) (InputStream ['a']) `shouldBe` ((Scanner (FailedTable empty) (DFATransitionTable (insert ("testState", "testCat") "TestFinalState" empty)) (DFAacceptingStates (insert "TestFinalState" True empty)) (TokenTypeTable (insert (GoodOrBadState "TestFinalState") (TokenType "testTokenType") empty)) "testState" (CharCatTable (insert 'a' "testCat" empty)) 1), ['a'], InputStream []) 
+      it "Should return a lex for (a) input" $ nextWord (Scanner (FailedTable empty) (DFATransitionTable (insert ("testState", "testCat") "TestFinalState" empty)) (DFAacceptingStates (insert "TestFinalState" True empty)) (TokenTypeTable (insert (GoodOrBadState "TestFinalState") (TokenType "testTokenType") empty)) "testState" (CharCatTable (insert 'a' "testCat" empty)) 0) (InputStream ['a'])
+        `shouldBe`
+        ((Scanner (FailedTable empty) (DFATransitionTable (insert ("testState", "testCat") "TestFinalState" empty)) (DFAacceptingStates (insert "TestFinalState" True empty)) (TokenTypeTable (insert (GoodOrBadState "TestFinalState") (TokenType "testTokenType") empty)) "testState" (CharCatTable (insert 'a' "testCat" empty)) 1), ['a'], InputStream [], Just (TokenType "testTokenType")) 
 
       it "Should handle the case where the initial state is accepting and should rollback to it" $
         nextWord (Scanner
@@ -42,7 +44,8 @@ spec = do
             0
           ),
           [],
-          InputStream ['a']
+          InputStream ['a'],
+          Just (TokenType "testTokenType")
         )
 
     it "Should return the string (a) and return the rest of the stream [b] after rolling back, the valid DFA map regex is (a)" $
@@ -67,7 +70,8 @@ spec = do
             1
           ),
           ['a'],
-          InputStream ['b']
+          InputStream ['b'],
+          Just (TokenType "testTokenType2")
         )
 
 

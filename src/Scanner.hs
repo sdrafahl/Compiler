@@ -12,7 +12,8 @@ module Scanner (
   TokenType(..),
   GoodOrBadState(..),
   Show(..),
-  Scanner(..)
+  Scanner(..),
+  Lexeme
   ) where
 
 import Data.Map
@@ -43,27 +44,29 @@ instance Show FailedTable where
 instance Show InputStream where
   show (InputStream strm) = show strm 
 
-nextWord :: Scanner -> InputStream -> (Scanner, Lexeme, InputStream)
+nextWord :: Scanner -> InputStream -> (Scanner, Lexeme, InputStream, Maybe TokenType)
 nextWord (Scanner faileTable dfaTransTable acceptingState tokenTypeTable startingState charCatTable position) inStream =
  case (nextWord' faileTable inStream position acceptingState charCatTable dfaTransTable startingState tokenTypeTable) of
    Nothing -> (
      (Scanner faileTable dfaTransTable acceptingState tokenTypeTable startingState charCatTable position),
      [],
-     InputStream []
+     InputStream [],
+     Nothing
               )
-   Just (failedTable', lex, inPosition, inStream') ->
+   Just (failedTable', lex, inPosition, inStream', tokenType) ->
      (
        (Scanner failedTable' dfaTransTable acceptingState tokenTypeTable startingState charCatTable inPosition),
        lex,
-       inStream'
+       inStream',
+       Just tokenType
      )
 
-nextWord' :: FailedTable -> InputStream -> InputPosition -> DFAacceptingStates -> CharCatTable -> DFATransitionTable -> InitialState -> TokenTypeTable -> Maybe (FailedTable, Lexeme, InputPosition, InputStream)
+nextWord' :: FailedTable -> InputStream -> InputPosition -> DFAacceptingStates -> CharCatTable -> DFATransitionTable -> InitialState -> TokenTypeTable -> Maybe (FailedTable, Lexeme, InputPosition, InputStream, TokenType)
 nextWord' _ (InputStream []) _ _ _ _ _ _ = Nothing
 nextWord' failedTable (InputStream inputStream) inputPos dfaAcceptingStates charCatTable dfaTransTable initialState tokenTypeTable =
   let (lex, inputPos', inputStream', stateStack) = exploreDFA (InputStream inputStream) "" failedTable 0 (GoodOrBadState initialState) (StateStack [((GoodOrBadState initialState), inputPos)]) dfaAcceptingStates charCatTable dfaTransTable
       (tokenType, failedTable', lex', inputStream'', inputPos'') = rollBackToLongestWordInStack stateStack lex tokenTypeTable failedTable dfaAcceptingStates inputStream'
-  in  Just (failedTable', lex', inputPos'', inputStream'')
+  in  Just (failedTable', lex', inputPos'', inputStream'', tokenType)
 
 
 exploreDFA :: InputStream -> Lexeme -> FailedTable -> InputPosition -> GoodOrBadState -> StateStack -> DFAacceptingStates -> CharCatTable -> DFATransitionTable -> (Lexeme, InputPosition, InputStream, StateStack)
