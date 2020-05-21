@@ -37,5 +37,11 @@ spec = do
   --     `shouldBe`
   --     (CFG (Data.Set.fromList [(NonTerminal "Fee")]) (Data.Set.fromList [(Terminal "A"), (Terminal "B")])  (Data.Set.fromList [(ProductionRule (NonTerm (NonTerminal "Fee"), [(NonTerm (NonTerminal "Fee")) ,(Term (Terminal "A"))])), (ProductionRule (NonTerm (NonTerminal "Fee"), [(Term (Terminal "B"))])) ]) (NonTerm (NonTerminal "Fee")))
   describe "mergeTransition" $ do
-    it "Should merge a production correctly" $ (mergeTransition (ProductionRule (NonTerm (NonTerminal "Fee"), [(NonTerm (NonTerminal "B")),(Term (Terminal "x"))])) [ProductionRule ((NonTerm (NonTerminal "B")), [Term (Terminal "a")]), ProductionRule ((NonTerm (NonTerminal "B")), [Term (Terminal "c")])]) `shouldBe` [ProductionRule (NonTerm (NonTerminal "Fee"),[(Term (Terminal "a")),(Term (Terminal "x"))]), ProductionRule (NonTerm (NonTerminal "Fee"), [(Term (Terminal "c")),(Term (Terminal "x"))])]
-  
+    it "Should merge a production correctly for the first case" $ (mergeTransition (ProductionRule (NonTerm (NonTerminal "Fee"), [(NonTerm (NonTerminal "B")),(Term (Terminal "x"))])) [ProductionRule ((NonTerm (NonTerminal "B")), [Term (Terminal "a")]), ProductionRule ((NonTerm (NonTerminal "B")), [Term (Terminal "c")])]) `shouldBe` [ProductionRule (NonTerm (NonTerminal "Fee"),[(Term (Terminal "a")),(Term (Terminal "x"))]), ProductionRule (NonTerm (NonTerminal "Fee"), [(Term (Terminal "c")),(Term (Terminal "x"))])]
+    it "Should merge a production correctly for the second case" $ (mergeTransition (ProductionRule (NonTerm (NonTerminal "Tee"), [(NonTerm (NonTerminal "B")),(Term (Terminal "x")), (NonTerm (NonTerminal "B"))])) [ProductionRule ((NonTerm (NonTerminal "B")), [NonTerm (NonTerminal "C"), Term (Terminal "a")]), ProductionRule ((NonTerm (NonTerminal "B")), [(NonTerm (NonTerminal "C"))])]) `shouldBe`
+      [
+        ProductionRule (NonTerm (NonTerminal "Tee"),[NonTerm (NonTerminal "C"),Term (Terminal "a"),Term (Terminal "x"),NonTerm (NonTerminal "C"),Term (Terminal "a")]),
+        ProductionRule (NonTerm (NonTerminal "Tee"),[NonTerm (NonTerminal "C"),Term (Terminal "a"),Term (Terminal "x"),NonTerm (NonTerminal "C")]),
+        ProductionRule (NonTerm (NonTerminal "Tee"),[NonTerm (NonTerminal "C"),Term (Terminal "x"),NonTerm (NonTerminal "C"),Term (Terminal "a")]),
+        ProductionRule (NonTerm (NonTerminal "Tee"),[NonTerm (NonTerminal "C"),Term (Terminal "x"),NonTerm (NonTerminal "C")])
+      ]
