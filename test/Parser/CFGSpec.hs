@@ -45,3 +45,12 @@ spec = do
         ProductionRule (NonTerm (NonTerminal "Tee"),[NonTerm (NonTerminal "C"),Term (Terminal "x"),NonTerm (NonTerminal "C"),Term (Terminal "a")]),
         ProductionRule (NonTerm (NonTerminal "Tee"),[NonTerm (NonTerminal "C"),Term (Terminal "x"),NonTerm (NonTerminal "C")])
       ]
+  describe "mergeProductionPath" $ do
+    it "Should merge the productions for the firt case" $ mergeProductionPath
+      [
+        [ProductionRule (NonTerm (NonTerminal "Tee"), [NonTerm (NonTerminal "B")])],
+        [ProductionRule (NonTerm (NonTerminal "B"), [Term (Terminal "c")])]
+      ]
+      []
+      `shouldBe`
+      [ProductionRule (NonTerm (NonTerminal "Tee"),[Term (Terminal "c")])]
