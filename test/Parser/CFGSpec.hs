@@ -54,3 +54,43 @@ spec = do
       []
       `shouldBe`
       [ProductionRule (NonTerm (NonTerminal "Tee"),[Term (Terminal "c")])]
+  describe "findPathCycles" $ do
+    it "Should return a path for first case" $ findPathCycles
+      [
+        [(NonTerm (NonTerminal "A")), (NonTerm (NonTerminal "F"))]
+      ]
+      (Data.Set.fromList [ProductionRule (NonTerm (NonTerminal "A"),[NonTerm (NonTerminal "F")]), ProductionRule (NonTerm (NonTerminal "F"),[NonTerm (NonTerminal "A")])])
+      `shouldBe`
+      [
+        (NonTerm (NonTerminal "A")),
+        (NonTerm (NonTerminal "F")),
+        (NonTerm (NonTerminal "A"))
+      ]
+    it "Should return a path for second case" $ findPathCycles
+      [
+        [(NonTerm (NonTerminal "A")), (NonTerm (NonTerminal "F"))]
+      ]
+      (Data.Set.fromList [
+          ProductionRule (NonTerm (NonTerminal "A"),[NonTerm (NonTerminal "F")]),
+          ProductionRule (NonTerm (NonTerminal "F"),[NonTerm (NonTerminal "C")]),
+          ProductionRule (NonTerm (NonTerminal "F"),[NonTerm (NonTerminal "D")]),
+          ProductionRule (NonTerm (NonTerminal "C"),[NonTerm (NonTerminal "A")]),
+          ProductionRule (NonTerm (NonTerminal "D"),[NonTerm (NonTerminal "A")])
+          ]
+      )
+      `shouldBe`
+      [NonTerm (NonTerminal "A"),NonTerm (NonTerminal "F"),NonTerm (NonTerminal "C"),NonTerm (NonTerminal "A")]
+    it "Should return a path for third case if there are not paths" $ findPathCycles
+      [
+        [(NonTerm (NonTerminal "A")), (NonTerm (NonTerminal "F"))]
+      ]
+      (Data.Set.fromList [
+          ProductionRule (NonTerm (NonTerminal "F"),[NonTerm (NonTerminal "C")])
+          ]
+      )
+      `shouldBe`
+      []
+    describe "convertPathToProductions" $ do
+      it "Should convert basic path to list of production" $ convertPathToProductions
+        [(NonTerm (NonTerminal "A")), (NonTerm (NonTerminal "B")), (NonTerm (NonTerminal "C"))] (Data.Set.fromList [ProductionRule (NonTerm (NonTerminal "A"),[NonTerm (NonTerminal "B")]), ProductionRule (NonTerm (NonTerminal "B"),[NonTerm (NonTerminal "C")])]) [] `shouldBe` [[ProductionRule (NonTerm (NonTerminal "A"),[NonTerm (NonTerminal "B")])],[ProductionRule (NonTerm (NonTerminal "B"),[NonTerm (NonTerminal "C")])]]
+  

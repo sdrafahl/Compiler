@@ -144,8 +144,6 @@ mergeTransition (ProductionRule (from, toTokens)) productionRulesToSubstituteIn 
                             _ -> Data.List.map (\(child :: [NonTerminalOrTerminal]) -> child ++ [token]) listOfProds
                         False ->
                           let productionsToExpand = Data.List.filter (\(ProductionRule (from', _)) -> from' == token) productionRulesToSubstituteIn
-                              _ = Debug.Trace.trace "I am right here Shane++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-                              _ = Debug.Trace.trace (show productionsToExpand)
                               children = Data.List.map getChildrenFromProductionRule productionsToExpand
                           in  case listOfProds of
                             [] -> children
