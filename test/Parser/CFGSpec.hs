@@ -120,3 +120,7 @@ spec = do
                                                [NonTerm (NonTerminal "C")]
                                                ])
                                            ]
+    describe "doesChildProductionHaveANonTerminalAtTheHead" $ do
+      it "should evaluate to false for empty list" $ do doesChildProductionHaveANonTerminalAtTheHead [] `shouldBe` False
+      it "should evaluate to true with a non empty list with terminal at the head" $ do doesChildProductionHaveANonTerminalAtTheHead [(NonTerm (NonTerminal "Tee")), (Term (Terminal "A"))] `shouldBe` True
+      it "should evaluate to false with a non empty list with terminal not at the head" $ do doesChildProductionHaveANonTerminalAtTheHead [(Term (Terminal "A")), (NonTerm (NonTerminal "Tee"))] `shouldBe` False
