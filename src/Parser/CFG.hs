@@ -25,15 +25,15 @@ getChildrenFromProductionRule :: ProductionRule -> [NonTerminalOrTerminal]
 getChildrenFromProductionRule (ProductionRule (_, children)) = children
 
 isTerminal :: NonTerminalOrTerminal -> Bool
-isTerminal (Term _) = True
-isTerminal (NonTerm _) = False
+isTerminal (Term (Terminal _)) = True
+isTerminal _ = False
 
 eleminateLeftRecursion :: CFG -> CFG
 eleminateLeftRecursion cfg =
   let groupsOfProductionsByFrom = Data.List.groupBy (\(ProductionRule (from, _)) (ProductionRule (from', _)) -> from == from') (Data.Set.toList (productionRules cfg))
       reduced = Data.List.map (\groupOfProductionsWithTheSameFrom -> ((getParentFromProductionRule (Data.List.head groupOfProductionsWithTheSameFrom)), Data.List.map getChildrenFromProductionRule groupOfProductionsWithTheSameFrom)) groupsOfProductionsByFrom
       newSet = Data.List.foldl' (\newSet' (from, to) -> Data.Set.union newSet' (removeLeftRecursion from to)) Data.Set.empty reduced
-      newNonTerminals = (Data.Set.map (\(ProductionRule (NonTerm (from'), _)) -> from') (Data.Set.filter (\(ProductionRule (from, _)) -> isTerminal from) newSet))
+      newNonTerminals = (Data.Set.map (\(ProductionRule (NonTerm (from'), _)) -> from') (Data.Set.filter (\(ProductionRule (from, _)) -> not (isTerminal from)) newSet))
       newTerminals = Data.Set.union (terminals cfg) (Data.Set.fromList [Terminal "δ"])
   in (CFG newNonTerminals newTerminals newSet (startSymbol cfg))
         
