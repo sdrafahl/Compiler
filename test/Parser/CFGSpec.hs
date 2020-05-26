@@ -97,12 +97,26 @@ spec = do
     describe "getProductions" $ do
       describe "Should get the productions from a set of provided ones where it starts with the left one in the tuple and the first child is the second tuple" $ do
         it "should passs for case A" $ do getProductions (NonTerm (NonTerminal "Tee"), NonTerm (NonTerminal "Tee1")) (Data.Set.fromList [(ProductionRule (NonTerm (NonTerminal "Tee"), [NonTerm (NonTerminal "Tee1")]))]) `shouldBe` [(ProductionRule (NonTerm (NonTerminal "Tee"), [NonTerm (NonTerminal "Tee1")]))]
-        it "should passs for case B" $ do getProductions (NonTerm (NonTerminal "Tee"), NonTerm (NonTerminal "Tee1")) (Data.Set.fromList [
-                                                                                                                         (ProductionRule (NonTerm (NonTerminal "Tee"), [NonTerm (NonTerminal "Tee1"), NonTerm (NonTerminal "Tee1")])),
-                                                                                                                         (ProductionRule (NonTerm (NonTerminal "Tee"), [NonTerm (NonTerminal "Te"), NonTerm (NonTerminal "Tee1")])),
-                                                                                                                         (ProductionRule (NonTerm (NonTerminal "Tee"), [NonTerm (NonTerminal "Tee1")]))
-                                                                                                                         ]) `shouldBe`
+        it "should passs for case B" $ do getProductions (NonTerm (NonTerminal "Tee"), NonTerm (NonTerminal "Tee1")) (Data.Set.fromList [(ProductionRule (NonTerm (NonTerminal "Tee"), [NonTerm (NonTerminal "Tee1"), NonTerm (NonTerminal "Tee1")])), (ProductionRule (NonTerm (NonTerminal "Tee"), [NonTerm (NonTerminal "Te"), NonTerm (NonTerminal "Tee1")])), (ProductionRule (NonTerm (NonTerminal "Tee"), [NonTerm (NonTerminal "Tee1")]))]) `shouldBe`
                                             [
                                               (ProductionRule (NonTerm (NonTerminal "Tee"), [NonTerm (NonTerminal "Tee1")])),
                                               (ProductionRule (NonTerm (NonTerminal "Tee"), [NonTerm (NonTerminal "Tee1"), NonTerm (NonTerminal "Tee1")]))
                                             ]
+    describe "getGroupedProductions" $ do
+      describe "Should group the productions from the parent token" $ do
+        it "should pass for case A" $ do getGroupedProductions (Data.Set.fromList
+                                                                [
+                                                                  ProductionRule (NonTerm (NonTerminal "Tee"), [NonTerm (NonTerminal "A")]),
+                                                                  ProductionRule (NonTerm (NonTerminal "Tee"), [NonTerm (NonTerminal "B")]),
+                                                                  ProductionRule (NonTerm (NonTerminal "Tee"), [NonTerm (NonTerminal "C")]),
+                                                                  ProductionRule (NonTerm (NonTerminal "Tee1"), [NonTerm (NonTerminal "C")])
+                                                                ]) `shouldBe` [
+                                           (NonTerm (NonTerminal "Tee"), [
+                                               [NonTerm (NonTerminal "A")],
+                                               [NonTerm (NonTerminal "B")],
+                                               [NonTerm (NonTerminal "C")]
+                                               ]),
+                                           (NonTerm (NonTerminal "Tee1"), [
+                                               [NonTerm (NonTerminal "C")]
+                                               ])
+                                           ]
