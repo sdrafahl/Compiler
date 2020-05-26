@@ -97,3 +97,12 @@ spec = do
     describe "getProductions" $ do
       describe "Should get the productions from a set of provided ones where it starts with the left one in the tuple and the first child is the second tuple" $ do
         it "should passs for case A" $ do getProductions (NonTerm (NonTerminal "Tee"), NonTerm (NonTerminal "Tee1")) (Data.Set.fromList [(ProductionRule (NonTerm (NonTerminal "Tee"), [NonTerm (NonTerminal "Tee1")]))]) `shouldBe` [(ProductionRule (NonTerm (NonTerminal "Tee"), [NonTerm (NonTerminal "Tee1")]))]
+        it "should passs for case B" $ do getProductions (NonTerm (NonTerminal "Tee"), NonTerm (NonTerminal "Tee1")) (Data.Set.fromList [
+                                                                                                                         (ProductionRule (NonTerm (NonTerminal "Tee"), [NonTerm (NonTerminal "Tee1"), NonTerm (NonTerminal "Tee1")])),
+                                                                                                                         (ProductionRule (NonTerm (NonTerminal "Tee"), [NonTerm (NonTerminal "Te"), NonTerm (NonTerminal "Tee1")])),
+                                                                                                                         (ProductionRule (NonTerm (NonTerminal "Tee"), [NonTerm (NonTerminal "Tee1")]))
+                                                                                                                         ]) `shouldBe`
+                                            [
+                                              (ProductionRule (NonTerm (NonTerminal "Tee"), [NonTerm (NonTerminal "Tee1")])),
+                                              (ProductionRule (NonTerm (NonTerminal "Tee"), [NonTerm (NonTerminal "Tee1"), NonTerm (NonTerminal "Tee1")]))
+                                            ]
