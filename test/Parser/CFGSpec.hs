@@ -94,3 +94,6 @@ spec = do
       it "Should convert basic path to list of production" $ convertPathToProductions
         [(NonTerm (NonTerminal "A")), (NonTerm (NonTerminal "B")), (NonTerm (NonTerminal "C"))] (Data.Set.fromList [ProductionRule (NonTerm (NonTerminal "A"),[NonTerm (NonTerminal "B")]), ProductionRule (NonTerm (NonTerminal "B"),[NonTerm (NonTerminal "C")])]) [] `shouldBe` [[ProductionRule (NonTerm (NonTerminal "A"),[NonTerm (NonTerminal "B")])],[ProductionRule (NonTerm (NonTerminal "B"),[NonTerm (NonTerminal "C")])]]
   
+    describe "getProductions" $ do
+      describe "Should get the productions from a set of provided ones where it starts with the left one in the tuple and the first child is the second tuple" $ do
+        it "should passs for case A" $ do getProductions (NonTerm (NonTerminal "Tee"), NonTerm (NonTerminal "Tee1")) (Data.Set.fromList [(ProductionRule (NonTerm (NonTerminal "Tee"), [NonTerm (NonTerminal "Tee1")]))]) `shouldBe` [(ProductionRule (NonTerm (NonTerminal "Tee"), [NonTerm (NonTerminal "Tee1")]))]
