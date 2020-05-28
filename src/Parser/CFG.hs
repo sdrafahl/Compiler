@@ -128,8 +128,7 @@ removeIndirectCycles' cfg =
       cyclePath = findPathCycles basePaths prods
       productionRulePaths = convertPathToProductions cyclePath prods []
       mergedPath = mergeProductionPath productionRulePaths []
-      --productionsToRemove :: Set ProductionRule = (Data.Set.fromList (intercalate [] productionRulePaths))
-      productionsToRemove :: Set ProductionRule = Data.Set.empty
+      productionsToRemove :: Set ProductionRule = (Data.Set.fromList (intercalate [] productionRulePaths))
       productionsRemoved :: Set ProductionRule = Data.Set.foldl' (\allProductions productionToRemove -> Data.Set.delete productionToRemove allProductions) (productionRules cfg) productionsToRemove
   in  (CFG (nonTerminals cfg) (terminals cfg) (Data.Set.union productionsRemoved (Data.Set.fromList mergedPath)) (startSymbol cfg))
       
