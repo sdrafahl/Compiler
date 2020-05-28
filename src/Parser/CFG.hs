@@ -113,8 +113,9 @@ mergeProductionPath productionRulePath mergedProductions =
   
 
 removeIndirectCycles :: CFG -> CFG
-removeIndirectCycles cfg =
-  let newCfg = removeIndirectCycles' cfg
+removeIndirectCycles cfg' =
+  let cfg = eleminateLeftRecursion cfg'
+      newCfg = removeIndirectCycles' cfg
       cfgWithoutIndirectCycles = case (newCfg == cfg) of
         True -> newCfg
         False -> removeIndirectCycles newCfg
@@ -138,9 +139,7 @@ mergeTransition (ProductionRule (from, toTokens)) productionRulesToSubstituteIn 
                       case (isTerminal token) of
                         True ->
                           case listOfProds of
-                            [] -> let base = [[token]]
-                                      _ = Debug.Trace.trace (show base)
-                                  in  base
+                            [] -> [[token]]
                             _ -> Data.List.map (\(child :: [NonTerminalOrTerminal]) -> child ++ [token]) listOfProds
                         False ->
                           let productionsToExpand = Data.List.filter (\(ProductionRule (from', _)) -> from' == token) productionRulesToSubstituteIn

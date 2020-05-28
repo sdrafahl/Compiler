@@ -28,10 +28,10 @@ spec = do
       `shouldBe`
       (CFG (Data.Set.fromList [(NonTerminal "Fee"), (NonTerminal "Fee'")]) (Data.Set.fromList [(Terminal "A"), (Terminal "B"), (Terminal "δ")]) (Data.Set.fromList [ProductionRule (NonTerm (NonTerminal "Fee"),[Term (Terminal "B"),NonTerm (NonTerminal "Fee'")]),ProductionRule (NonTerm (NonTerminal "Fee'"),[Term (Terminal "A"),NonTerm (NonTerminal "Fee'")]),ProductionRule (NonTerm (NonTerminal "Fee'"),[Term (Terminal "\948")])]) (NonTerm (NonTerminal "Fee")))
       
-  -- describe "removeIndirectCycles" $ do
-  --   it "Should elimate left recursion from case A" $ removeIndirectCycles (CFG (Data.Set.fromList [(NonTerminal "Fee")]) (Data.Set.fromList [(Terminal "A"), (Terminal "B")])  (Data.Set.fromList [(ProductionRule (NonTerm (NonTerminal "Fee"), [(NonTerm (NonTerminal "Fee")) ,(Term (Terminal "A"))])), (ProductionRule (NonTerm (NonTerminal "Fee"), [(Term (Terminal "B"))])) ]) (NonTerm (NonTerminal "Fee")))
-  --     `shouldBe`
-  --     (CFG (Data.Set.fromList [(NonTerminal "Fee"), (NonTerminal "Fee'")]) (Data.Set.fromList [(Terminal "A"), (Terminal "B"), (Terminal "δ")]) (Data.Set.fromList [ProductionRule (NonTerm (NonTerminal "Fee"),[Term (Terminal "B"),NonTerm (NonTerminal "Fee'")]),ProductionRule (NonTerm (NonTerminal "Fee'"),[Term (Terminal "A"),NonTerm (NonTerminal "Fee'")]),ProductionRule (NonTerm (NonTerminal "Fee'"),[Term (Terminal "\948")])]) (NonTerm (NonTerminal "Fee")))
+  describe "removeIndirectCycles" $ do
+    it "Should elimate left recursion from case A" $ removeIndirectCycles (CFG (Data.Set.fromList [(NonTerminal "Fee")]) (Data.Set.fromList [(Terminal "A"), (Terminal "B")]) (Data.Set.fromList [(ProductionRule (NonTerm (NonTerminal "Fee"), [(NonTerm (NonTerminal "Fee")) ,(Term (Terminal "A"))])), (ProductionRule (NonTerm (NonTerminal "Fee"), [(Term (Terminal "B"))]))]) (NonTerm (NonTerminal "Fee")))
+      `shouldBe`
+      (CFG (Data.Set.fromList [(NonTerminal "Fee"), (NonTerminal "Fee'")]) (Data.Set.fromList [(Terminal "A"), (Terminal "B"), (Terminal "δ")]) (Data.Set.fromList [ProductionRule (NonTerm (NonTerminal "Fee"),[Term (Terminal "B"),NonTerm (NonTerminal "Fee'")]), ProductionRule (NonTerm (NonTerminal "Fee'"),[Term (Terminal "A"),NonTerm (NonTerminal "Fee'")]), ProductionRule (NonTerm (NonTerminal "Fee'"),[Term (Terminal "\948")])]) (NonTerm (NonTerminal "Fee")))
   -- describe "removeIndirectCycles'" $ do
   --   it "Should elimate left recursion from case A" $ removeIndirectCycles' (CFG (Data.Set.fromList [(NonTerminal "Fee")]) (Data.Set.fromList [(Terminal "A"), (Terminal "B")])  (Data.Set.fromList [(ProductionRule (NonTerm (NonTerminal "Fee"), [(NonTerm (NonTerminal "Fee")) ,(Term (Terminal "A"))])), (ProductionRule (NonTerm (NonTerminal "Fee"), [(Term (Terminal "B"))])) ]) (NonTerm (NonTerminal "Fee")))
   --     `shouldBe`
