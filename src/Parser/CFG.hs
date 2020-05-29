@@ -28,14 +28,26 @@ isTerminal :: NonTerminalOrTerminal -> Bool
 isTerminal (Term (Terminal _)) = True
 isTerminal _ = False
 
+getValueFromNonTermOrTerminal :: NonTerminalOrTerminal -> String
+getValueFromNonTermOrTerminal (Term (Terminal a)) = a
+getValueFromNonTermOrTerminal (NonTerm (NonTerminal a)) = a
+
 eleminateLeftRecursion :: CFG -> CFG
 eleminateLeftRecursion cfg =
-  let groupsOfProductionsByFrom = Data.List.groupBy (\(ProductionRule (from, _)) (ProductionRule (from', _)) -> from == from') (Data.Set.toList (productionRules cfg))
-      reduced = Data.List.map (\groupOfProductionsWithTheSameFrom -> ((getParentFromProductionRule (Data.List.head groupOfProductionsWithTheSameFrom)), Data.List.map getChildrenFromProductionRule groupOfProductionsWithTheSameFrom)) groupsOfProductionsByFrom
-      newSet = Data.List.foldl' (\newSet' (from, to) -> Data.Set.union newSet' (removeLeftRecursion from to)) Data.Set.empty reduced
+  let groupsOfProductionsByFrom = Debug.Trace.traceShow ("cfg: " ++ (show (Data.List.groupBy (\(ProductionRule (from, _)) (ProductionRule (from', _)) -> from == from') (Data.Set.toList (productionRules cfg))))) (Data.List.groupBy (\(ProductionRule (from, _)) (ProductionRule (from', _)) -> from == from') (Data.Set.toList (productionRules cfg)))
+      reduced = (Data.List.map (\groupOfProductionsWithTheSameFrom -> ((getParentFromProductionRule (Data.List.head groupOfProductionsWithTheSameFrom)), Data.List.map getChildrenFromProductionRule groupOfProductionsWithTheSameFrom)) groupsOfProductionsByFrom)
+      newSet = (Data.List.foldl' (\newSet' (from, to) -> Data.Set.union newSet' (removeLeftRecursion from to)) Data.Set.empty reduced)
       newNonTerminals = (Data.Set.map (\(ProductionRule (NonTerm (from'), _)) -> from') (Data.Set.filter (\(ProductionRule (from, _)) -> not (isTerminal from)) newSet))
-      newTerminals = Data.Set.union (terminals cfg) (Data.Set.fromList [Terminal "δ"])
-  in (CFG newNonTerminals newTerminals newSet (startSymbol cfg))
+      newStartingSymbol =  case (Data.Set.member (startSymbol cfg) (Data.Set.map (\nonTerm -> NonTerm nonTerm) newNonTerminals)) of
+                             True -> (startSymbol cfg)
+                             _ ->
+                               let valueOfStarting = getValueFromNonTermOrTerminal (startSymbol cfg)
+                               in  (NonTerm (NonTerminal (valueOfStarting ++ "'")))
+  in case newSet == (productionRules cfg) of
+       False ->
+         let newTerminals = Data.Set.union (terminals cfg) (Data.Set.fromList [Terminal "δ"])
+         in (CFG newNonTerminals newTerminals newSet newStartingSymbol)
+       True -> cfg
         
 getNameOfNonTerminalOrTerminal :: NonTerminalOrTerminal -> String 
 getNameOfNonTerminalOrTerminal (Term (Terminal name)) = name
@@ -114,22 +126,22 @@ mergeProductionPath productionRulePath mergedProductions =
 
 removeIndirectCycles :: CFG -> CFG
 removeIndirectCycles cfg' =
-  let cfg = eleminateLeftRecursion cfg'
-      newCfg = removeIndirectCycles' cfg
+  let cfg = (eleminateLeftRecursion cfg')
+      newCfg = (removeIndirectCycles' cfg)
       cfgWithoutIndirectCycles = case (newCfg == cfg) of
         True -> newCfg
-        False -> removeIndirectCycles newCfg
+        False -> (removeIndirectCycles newCfg)
   in  eleminateLeftRecursion cfgWithoutIndirectCycles
   
 removeIndirectCycles' :: CFG -> CFG
 removeIndirectCycles' cfg =
   let (prods :: Set ProductionRule) = (productionRules cfg)
-      basePaths = Data.Set.toList (Data.Set.map (\(ProductionRule (from, children)) -> [from, (Data.List.head children)]) prods)
-      cyclePath = findPathCycles basePaths prods
-      productionRulePaths = convertPathToProductions cyclePath prods []
-      mergedPath = mergeProductionPath productionRulePaths []
-      productionsToRemove :: Set ProductionRule = (Data.Set.fromList (intercalate [] productionRulePaths))
-      productionsRemoved :: Set ProductionRule = Data.Set.foldl' (\allProductions productionToRemove -> Data.Set.delete productionToRemove allProductions) (productionRules cfg) productionsToRemove
+      basePaths = (Data.Set.toList (Data.Set.map (\(ProductionRule (from, children)) -> [from, (Data.List.head children)]) prods))
+      cyclePath = (findPathCycles basePaths prods)
+      productionRulePaths = (convertPathToProductions cyclePath prods [])
+      mergedPath = (mergeProductionPath productionRulePaths [])
+      productionsToRemove :: Set ProductionRule = ((Data.Set.fromList (intercalate [] productionRulePaths)))
+      productionsRemoved :: Set ProductionRule = (Data.Set.foldl' (\allProductions productionToRemove -> Data.Set.delete productionToRemove allProductions) (productionRules cfg) productionsToRemove)
   in  (CFG (nonTerminals cfg) (terminals cfg) (Data.Set.union productionsRemoved (Data.Set.fromList mergedPath)) (startSymbol cfg))
       
 mergeTransition :: ProductionRule -> [ProductionRule] -> [ProductionRule]
@@ -149,14 +161,16 @@ mergeTransition (ProductionRule (from, toTokens)) productionRulesToSubstituteIn 
                       ) [] toTokens
   in Data.List.map (\children -> (ProductionRule (from, children))) newChildren     
 
-  
+
+findACycleFromPathAndChildren :: [(Path, Set [NonTerminalOrTerminal])] -> Maybe ([NonTerminalOrTerminal], Set [NonTerminalOrTerminal])
+findACycleFromPathAndChildren listOfPathsAndTheirChild = find (\(pathOfChildren, setOfChildren) -> isSomthing (Data.List.find (\children -> doesChildProductionHaveAtTheHead (head pathOfChildren) children) (Data.Set.toList setOfChildren))) listOfPathsAndTheirChild
+          
 findPathCycles :: [Path] -> Set ProductionRule -> Path
 findPathCycles listOfPaths setOfProductionRules =
-  let startingToken :: NonTerminalOrTerminal = head (head listOfPaths)
-      endsOfThePaths :: [NonTerminalOrTerminal] = Data.List.map (\(path :: [NonTerminalOrTerminal]) -> Data.List.last path) listOfPaths
+  let endsOfThePaths :: [NonTerminalOrTerminal] = Data.List.map (\(path :: [NonTerminalOrTerminal]) -> Data.List.last path) listOfPaths
       newEndSets = Data.List.map (\(setOfProductions :: Set ProductionRule) -> Data.Set.map getChildrenFromProductionRule setOfProductions) (Data.List.map (\(end :: NonTerminalOrTerminal) -> getSetOfProductionForGivenFromToken end setOfProductionRules) endsOfThePaths)
       listOfPathsAndTheirChild = zip listOfPaths newEndSets
-      maybeASetAndPath = find (\(_, setOfChildren) -> isSomthing (Data.List.find (\children -> doesChildProductionHaveAtTheHead startingToken children) (Data.Set.toList setOfChildren))) listOfPathsAndTheirChild
+      maybeASetAndPath = findACycleFromPathAndChildren listOfPathsAndTheirChild
   in case maybeASetAndPath of
         Nothing ->
           let pathAndChildren = Data.List.map (\(path, setOfChildren) -> (path, Data.Set.toList setOfChildren)) listOfPathsAndTheirChild
@@ -169,10 +183,9 @@ findPathCycles listOfPaths setOfProductionRules =
           in case pathsAndTerminalChildren of
             [] -> []
             _ ->
-              let terminalStartsOnChildren = Data.List.map (\(path, children) -> (path, head children)) pathsAndTerminalChildren
-                  newPaths = Data.List.foldl' (\newList (path, nextSteps) -> newList ++ (Data.List.map (\nextStep -> path ++ [nextStep]) nextSteps)) [] terminalStartsOnChildren
+              let newPaths = Data.List.foldl' (\newPaths' (path, children) -> newPaths' ++ Data.List.map (\child -> (path ++ [head child])) children) [] pathsAndTerminalChildren
               in  findPathCycles newPaths setOfProductionRules
         Just (path, setOfChildren) ->
-          let Just childWithSymbol = Data.List.find (\child -> (head child) == startingToken) (Data.Set.toList setOfChildren)
-          in  path ++ childWithSymbol
+          let Just childWithSymbol = Data.List.find (\child -> (head child) == (head path)) (Data.Set.toList setOfChildren)
+          in  path ++ [head childWithSymbol]
               
