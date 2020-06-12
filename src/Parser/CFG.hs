@@ -34,7 +34,7 @@ getValueFromNonTermOrTerminal (NonTerm (NonTerminal a)) = a
 
 eleminateLeftRecursion :: CFG -> CFG
 eleminateLeftRecursion cfg =
-  let groupsOfProductionsByFrom = Debug.Trace.traceShow ("cfg: " ++ (show (Data.List.groupBy (\(ProductionRule (from, _)) (ProductionRule (from', _)) -> from == from') (Data.Set.toList (productionRules cfg))))) (Data.List.groupBy (\(ProductionRule (from, _)) (ProductionRule (from', _)) -> from == from') (Data.Set.toList (productionRules cfg)))
+  let groupsOfProductionsByFrom = (Data.List.groupBy (\(ProductionRule (from, _)) (ProductionRule (from', _)) -> from == from') (Data.Set.toList (productionRules cfg)))
       reduced = (Data.List.map (\groupOfProductionsWithTheSameFrom -> ((getParentFromProductionRule (Data.List.head groupOfProductionsWithTheSameFrom)), Data.List.map getChildrenFromProductionRule groupOfProductionsWithTheSameFrom)) groupsOfProductionsByFrom)
       newSet = (Data.List.foldl' (\newSet' (from, to) -> Data.Set.union newSet' (removeLeftRecursion from to)) Data.Set.empty reduced)
       newNonTerminals = (Data.Set.map (\(ProductionRule (NonTerm (from'), _)) -> from') (Data.Set.filter (\(ProductionRule (from, _)) -> not (isTerminal from)) newSet))
