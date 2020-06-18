@@ -13,7 +13,6 @@ import Data.Maybe
 
 data First = First (Map NonTerminalOrTerminal (Set Terminal)) deriving (Eq, Show)
 
-
 addMappingToFirst :: NonTerminalOrTerminal -> Terminal -> First -> First
 addMappingToFirst key value (First values) =
   let ((setForTheKey :: Maybe (Set Terminal))) = Data.Map.lookup key values
