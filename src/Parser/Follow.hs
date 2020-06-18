@@ -2,7 +2,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
-module Parser.First where
+module Parser.Follow where
 
 import Data.Set
 import Data.List
@@ -46,14 +46,13 @@ instance FixedPointAlgorithm Follow where
 
 createFollow :: First -> (Set ProductionRule) -> Follow
 createFollow first prodRules =
-  let (fixedPointAlgorithm :: Follow -> Follow) = fixedPointAlgorithm first prodRules
-      (follow :: Follow) = (Follow Data.Map.empty)
-      (fixedPointAlgorithm :: Follow -> Follow) = fixedPointAlgorithm first prodRules
-      (follow' :: Follow) = fixPointOperation follow fixedPointAlgorithm
-  in  addValueToAllKeys follow (Terminal "δ") 
+  let (followBase :: Follow) = (Follow Data.Map.empty)
+      (fixedPointAlgorithmInstance :: Follow -> Follow) = fixedPointAlgorithmCreatingFollow first prodRules
+      (follow' :: Follow) = fixPointOperation followBase fixedPointAlgorithmInstance
+  in  addValueToAllKeys follow' (Terminal "δ") 
       
-fixedPointAlgorithm :: First -> (Set ProductionRule) -> Follow -> Follow
-fixedPointAlgorithm first prodRules follow =
+fixedPointAlgorithmCreatingFollow :: First -> (Set ProductionRule) -> Follow -> Follow
+fixedPointAlgorithmCreatingFollow first prodRules follow =
   let (productionRulesAlgorithm :: Follow -> ProductionRule -> Follow) = addFollowingForEachProductionRule first
   in  foldingAlgorithm prodRules follow productionRulesAlgorithm 
   
@@ -62,24 +61,24 @@ addFollowingForEachProductionRule first follow productionRule =
   let (trailer :: Set Terminal) = getTerminalsFromFollow follow (getParentFromProductionRule productionRule)
       (childrenOfProductionRule :: [NonTerminalOrTerminal]) = getChildrenFromProductionRule productionRule
       (algorithmToScanThroughChildren :: (Follow, Set Terminal) -> NonTerminalOrTerminal -> (Follow, Set Terminal)) = addFollowingForGivenRightChildren first
-      (follow', _) = foldingAlgorithm childrenOfProductionRule follow algorithmToScanThroughChildren
+      (follow' :: Follow, _) = foldingAlgorithm childrenOfProductionRule (follow, (Data.Set.empty :: Set Terminal)) algorithmToScanThroughChildren
   in  follow'
 
-instance FoldingAlgorithm [NonTerminalOrTerminal] Follow (Follow, Set Terminal) -> NonTerminalOrTerminal -> (Follow, Set Terminal) where
-  foldingAlgorithm children' initFollow algo = (Data.Set.foldl' algo initFollow (Data.List.reverse children'))
+instance FoldingAlgorithm [NonTerminalOrTerminal] (Follow, Set Terminal) ((Follow, Set Terminal) -> NonTerminalOrTerminal -> (Follow, Set Terminal)) where
+  foldingAlgorithm children' initFollowAndTrailer algo = (Data.Set.foldl' algo initFollowAndTrailer (Data.Set.fromList (Data.List.reverse children')))
 
 addFollowingForGivenRightChildren :: First -> (Follow, Set Terminal) -> NonTerminalOrTerminal -> (Follow, Set Terminal)
-addFollowingForGivenRightChildren _ accFollows (Term _) = accFollows
+addFollowingForGivenRightChildren first (accFollow, trailer) (Term term) = (accFollow, getFirst first (Term term))
 addFollowingForGivenRightChildren first (accFollow, trailer) (NonTerm nonTerm) =
-  let (followingForChild :: Set Terminal) = getTerminalsFromFollow accFollow
+  let (followingForChild :: Set Terminal) = getTerminalsFromFollow accFollow nonTerm
       (accFollow' :: Follow) = addTerminalsForSomeKey accFollow nonTerm followingForChild
       (firstTerminals :: Set Terminal) = getFirst first (NonTerm nonTerm)
-      (trailer' :: First) = case (Data.Set.member (Terminal "δ") firstTerminals) of
+      (trailer' :: Set Terminal) = case (Data.Set.member (Terminal "δ") firstTerminals) of
                               True ->
-                                let (firstTerminals' :: Set Terminals) = Data.Set.delete (Terminal "δ") firstTerminals
+                                let (firstTerminals' :: Set Terminal) = Data.Set.delete (Terminal "δ") firstTerminals
                                 in  Data.Set.union firstTerminals' trailer
                               False -> firstTerminals
-  in (accFollow', firstTerminals)
+  in (accFollow', trailer')
 
 
           

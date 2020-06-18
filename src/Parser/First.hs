@@ -64,9 +64,9 @@ addTerminalsToFirst first productionRule =
       (rhs'' :: Set Terminal) = case flag of
                                   ReachedAllChildren -> Data.Set.insert (Terminal "δ") rhs'
                                   DidNotReachAllChildren -> rhs'
-      (a :: NonTerminalOrTerminal) = getParentFromProductionRule productionRule
-      (rhs''' :: Set Terminal) = Data.Set.union (rhs'') (getFirst first a)
-  in  addFirst first a rhs'''
+      (a :: NonTerminal) = getParentFromProductionRule productionRule
+      (rhs''' :: Set Terminal) = Data.Set.union (rhs'') (getFirst first (NonTerm a))
+  in  addFirst first (NonTerm a) rhs'''
 
 addTerminalsForEachProduction :: (Set ProductionRule) -> First -> First
 addTerminalsForEachProduction prodRules first = foldingAlgorithm prodRules first addTerminalsToFirst
@@ -77,10 +77,10 @@ addTerminalsUntilFixedPoint first prodRules = fixPointOperation first fixedPoint
 
 -- Main Algorithm                                     
 createFirstMap :: Set ProductionRule -> Set Terminal -> First
-createFirstMap setOfProductionRules terminals =
+createFirstMap setOfProductionRules terminals' =
   let (intialFirst :: First) = (First Data.Map.empty)
-      (intialFirstWithTerminalsSet :: First) = (Data.Set.foldl' (\first terminal -> addMappingToFirst (Term terminal) terminal first) intialFirst terminals)
+      (intialFirstWithTerminalsSet :: First) = (Data.Set.foldl' (\first terminal -> addMappingToFirst (Term terminal) terminal first) intialFirst terminals')
       (intialFirstWithTerminalsSetWithEmptyString :: First) = addMappingToFirst (Term (Terminal "δ")) (Terminal "δ") intialFirstWithTerminalsSet
-      (intialFirstWithTerminalsSetWithEmptyStringAndEOF :: First) = addMappingToFirst (Term (Terminal "EOF")) (Terminal "EOF") intialFirstWithTerminalsSet
+      (intialFirstWithTerminalsSetWithEmptyStringAndEOF :: First) = addMappingToFirst (Term (Terminal "EOF")) (Terminal "EOF") intialFirstWithTerminalsSetWithEmptyString
   in  addTerminalsUntilFixedPoint intialFirstWithTerminalsSetWithEmptyStringAndEOF setOfProductionRules
 
