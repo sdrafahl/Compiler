@@ -1,15 +1,10 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 module Parser.FirstSpec (spec) where
 
-import Import
-import Util
+import Misc.Import
+import Misc.Util
 import Test.Hspec
 import Test.Hspec.QuickCheck
-import RegularExpression
-import NFAtoDFA
-import StateMachine
-import DFA
-import NFA
 import Data.Map (Map)
 import Data.Map
 import Data.Set

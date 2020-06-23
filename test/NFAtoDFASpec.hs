@@ -1,18 +1,18 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 module NFAtoDFASpec (spec) where
 
-import Import
-import Util
+import Misc.Import
+import Misc.Util
 import Test.Hspec
 import Test.Hspec.QuickCheck
-import RegularExpression
-import NFAtoDFA
-import StateMachine
-import DFA
-import NFA
+import Scanner.RegularExpression
+import Scanner.NFAtoDFA
+import Scanner.StateMachine
+import Scanner.DFA
+import Scanner.NFA
 import Data.Map (Map)
 import Data.Map
-import TokenType
+import Scanner.TokenType
 
 spec :: Spec
 spec = do

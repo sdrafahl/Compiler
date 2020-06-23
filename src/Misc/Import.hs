@@ -1,8 +1,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
-module Import
+module Misc.Import
   ( module RIO
-  , module Types
+  , module Misc.Types
   ) where
 
 import RIO
-import Types
+import Misc.Types

@@ -1,19 +1,19 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 module DFAToScannerSpec (spec) where
 
-import Import
-import Util
+import Misc.Import
+import Misc.Util
 import Test.Hspec
 import Test.Hspec.QuickCheck
-import DFAMinimization
-import DFA
-import StateMachine
-import Minimization
+import Scanner.DFAMinimization
+import Scanner.DFA
+import Scanner.StateMachine
+import Scanner.Minimization
 import Data.Map
-import TokenType
-import DFAToScanner
-import Scanner
-import CharCategoryTable
+import Scanner.TokenType
+import Scanner.DFAToScanner
+import Scanner.Scanner
+import Scanner.CharCategoryTable
 
 spec :: Spec
 spec = do

@@ -1,13 +1,13 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
-module DFAToScanner (convertDFAToScanner) where
+module Scanner.DFAToScanner (convertDFAToScanner) where
 
-import Scanner
-import DFA
+import Scanner.Scanner
+import Scanner.DFA
 import Data.Map
-import StateMachine
+import Scanner.StateMachine
 import Data.List
-import CharCategoryTable
+import Scanner.CharCategoryTable
 
 createCharCategoryTableFromDFA :: DFA -> (Char -> CharCategory) -> Map Char CharCategory
 createCharCategoryTableFromDFA dfa charToCategory =

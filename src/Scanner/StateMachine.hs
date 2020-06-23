@@ -1,4 +1,4 @@
-module StateMachine (
+module Scanner.StateMachine (
   State,
   InputCharacter(..),
   Transition(..),

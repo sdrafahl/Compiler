@@ -1,7 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
 
-module CharCategoryTable (
+module Scanner.CharCategoryTable (
   CharCatTable(..),
   CharCategory
   ) where

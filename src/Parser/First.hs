@@ -10,6 +10,8 @@ import Data.Map
 import Debug.Trace
 import Parser.CFG
 import Data.Maybe
+import RecursiveAlgorithms.FixedPoint
+import RecursiveAlgorithms.FoldingAlgorithm
 
 data First = First (Map NonTerminalOrTerminal (Set Terminal)) deriving (Eq, Show)
 
@@ -29,14 +31,8 @@ getFirst (First values) tokenKey = case Data.Map.lookup tokenKey values of
                                      Nothing -> Data.Set.empty
                                      Just terms -> terms
 
-class FoldingAlgorithm dataToFold init algo where
-  foldingAlgorithm :: dataToFold -> init -> algo -> init
-
 instance FoldingAlgorithm (Set ProductionRule) First (First -> ProductionRule -> First) where
   foldingAlgorithm productionRules' intiStartMap algo = (Data.Set.foldl' algo intiStartMap productionRules')
-
-class FixedPointAlgorithm d where
-  fixPointOperation :: d -> (d -> d) -> d
 
 instance FixedPointAlgorithm First where
   fixPointOperation first firstOperation =

@@ -1,5 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
-module RegularExpressionToNFA (
+module Scanner.RegularExpressionToNFA (
     NFA (..),
     InputCharacter (..),
     Transition (..),
@@ -13,11 +13,11 @@ import Data.List.Index
 import Data.Char
 import Debug.Trace
 import System.IO.Unsafe
-import Conversion
-import RegularExpression
-import NFA
-import StateMachine
-import TokenType
+import Scanner.Conversion
+import Scanner.RegularExpression
+import Scanner.NFA
+import Scanner.StateMachine
+import Scanner.TokenType
 import Data.Map
 
 instance Show REOrNFA where

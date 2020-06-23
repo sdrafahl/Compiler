@@ -1,16 +1,16 @@
 {-# LANGUAGE FlexibleInstances #-}
-module DFA (
+module Scanner.DFA (
   DFA(..),
   State,
   Transition,
   GetAlpha(..)
   ) where
 
-import StateMachine
+import Scanner.StateMachine
 import Data.Map
 import Data.Set
 import Data.List
-import TokenType
+import Scanner.TokenType
 
 data DFA = DFA {states :: [State], startState :: State, terminalStates :: [State], transitions :: [Transition Char], categories :: Map State TokenType} deriving (Eq)
 

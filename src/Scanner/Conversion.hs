@@ -1,5 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
-module Conversion where
+module Scanner.Conversion where
 
 class Conversion from to where
   convert :: from -> to

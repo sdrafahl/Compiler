@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
-module Scanner (
+module Scanner.Scanner (
   nextWord,
   InputStream(..),
   StateStack(..),
@@ -17,10 +17,10 @@ module Scanner (
   ) where
 
 import Data.Map
-import StateMachine
-import CharCategoryTable
+import Scanner.StateMachine
+import Scanner.CharCategoryTable
 import Data.List
-import TokenType
+import Scanner.TokenType
 
 type Lexeme = String
 type InputPosition = Integer
@@ -94,9 +94,9 @@ rollBackToLongestWordInStack stateStack lex tokenTypeTable failedTable accepting
     (Just (currentState, inputPosition), newStack) ->
        case (isAcceptingState acceptingStates currentState) of
          True -> ((lookupTokenType tokenTypeTable currentState), failedTable, lex, inputStream, inputPosition)
-         False -> case Scanner.getLast lex of
-           Just charToPutBackOnStream -> rollBackToLongestWordInStack newStack (Scanner.truncate lex) tokenTypeTable (markAsFailed failedTable (currentState, inputPosition)) acceptingStates (rollBack inputStream charToPutBackOnStream)
-           Nothing -> rollBackToLongestWordInStack newStack (Scanner.truncate lex) tokenTypeTable (markAsFailed failedTable (currentState, inputPosition)) acceptingStates inputStream
+         False -> case Scanner.Scanner.getLast lex of
+           Just charToPutBackOnStream -> rollBackToLongestWordInStack newStack (Scanner.Scanner.truncate lex) tokenTypeTable (markAsFailed failedTable (currentState, inputPosition)) acceptingStates (rollBack inputStream charToPutBackOnStream)
+           Nothing -> rollBackToLongestWordInStack newStack (Scanner.Scanner.truncate lex) tokenTypeTable (markAsFailed failedTable (currentState, inputPosition)) acceptingStates inputStream
            
 ---------------------------------------
 -- TokenTypeTable Helper Functions

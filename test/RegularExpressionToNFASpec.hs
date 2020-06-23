@@ -1,14 +1,14 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 module RegularExpressionToNFASpec (spec) where
 
-import Import
-import Util
-import RegularExpressionToNFA
+import Misc.Import
+import Misc.Util
+import Scanner.RegularExpressionToNFA
 import Test.Hspec
 import Test.Hspec.QuickCheck
-import RegularExpression
+import Scanner.RegularExpression
 import Data.Map
-import TokenType
+import Scanner.TokenType
 
 spec :: Spec
 spec = do

@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
-module NFA (
+module Scanner.NFA (
     Transition(..),
     NFA(..),
     baseNfa,
@@ -10,8 +10,8 @@ module NFA (
     kleanClosureNfa
   ) where
 
-import StateMachine
-import TokenType
+import Scanner.StateMachine
+import Scanner.TokenType
 import Data.Map
 import Data.List
 import Data.Set

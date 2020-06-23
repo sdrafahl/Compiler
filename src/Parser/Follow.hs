@@ -11,6 +11,8 @@ import Debug.Trace
 import Parser.CFG
 import Data.Maybe
 import Parser.First
+import RecursiveAlgorithms.FixedPoint
+import RecursiveAlgorithms.FoldingAlgorithm
 
 data Follow = Follow (Map NonTerminal (Set Terminal)) deriving (Eq, Show)
 

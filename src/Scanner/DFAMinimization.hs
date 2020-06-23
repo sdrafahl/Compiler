@@ -1,13 +1,13 @@
-module DFAMinimization (Minimization(..)) where
+module Scanner.DFAMinimization (Minimization(..)) where
 
-import StateMachine
+import Scanner.StateMachine
 import Data.Map
 import Data.List
 import Data.Set
-import Minimization
-import TokenType
+import Scanner.Minimization
+import Scanner.TokenType
 import Data.Tuple
-import DFA
+import Scanner.DFA
 
 type DFAPartition = [State]
 type AlphaCharacter = Char
@@ -16,7 +16,7 @@ type T = [DFAPartition]
 
 getPartitionFromState :: DFA -> State -> AlphaCharacter -> T -> Maybe DFAPartition 
 getPartitionFromState dfa state character partitions =
-  let maybeTransition = (Data.List.uncons (Data.List.filter (\(Transition fromState input toState) -> input == character && fromState == state) (DFA.transitions dfa)))
+  let maybeTransition = (Data.List.uncons (Data.List.filter (\(Transition fromState input toState) -> input == character && fromState == state) (Scanner.DFA.transitions dfa)))
   in case maybeTransition of
           Just (trans, _) -> Just (head (Data.List.filter (\partition -> elem (fromState trans) partition) partitions))
           Nothing -> Nothing
@@ -48,7 +48,7 @@ splitUntilEqual ps dfa alpha ts  =
   case ((Data.Set.fromList ts) == (Data.Set.fromList ps)) of
     True -> ps
     False ->
-     splitUntilEqual (Data.List.foldr (\parti newT -> (DFAMinimization.split dfa alpha ps parti) ++ newT) [] ps) dfa alpha ps
+     splitUntilEqual (Data.List.foldr (\parti newT -> (Scanner.DFAMinimization.split dfa alpha ps parti) ++ newT) [] ps) dfa alpha ps
 
 doesPartitionContainGivenStates :: DFAPartition -> [State] -> Bool
 doesPartitionContainGivenStates partition states = Data.List.foldr (\stateInPartition result -> result || elem stateInPartition states) False partition

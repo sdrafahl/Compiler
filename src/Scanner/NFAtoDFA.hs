@@ -1,16 +1,16 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE BlockArguments #-}
-module NFAtoDFA (Conversion(..)) where
-import NFA
-import DFA
-import StateMachine
+module Scanner.NFAtoDFA (Conversion(..)) where
+import Scanner.NFA
+import Scanner.DFA
+import Scanner.StateMachine
 import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe
-import Conversion
-import TokenType
+import Scanner.Conversion
+import Scanner.TokenType
 import Data.List
 
 type Q = [[State]]
@@ -19,7 +19,7 @@ type T = Map [State] [(Char, [State])]
 type Alpha = [Char]
 
 getAllTransitionsFrom :: [State] -> NFA -> InputCharacter -> [Transition InputCharacter]
-getAllTransitionsFrom givenStates nfa transCharacter = (filter (\(Transition fromState inp toState) -> inp == transCharacter) (filter (\transition -> elem (fromState transition) givenStates) (NFA.transitions nfa)))
+getAllTransitionsFrom givenStates nfa transCharacter = (filter (\(Transition fromState inp toState) -> inp == transCharacter) (filter (\transition -> elem (fromState transition) givenStates) (Scanner.NFA.transitions nfa)))
 
 delta :: [State] -> NFA -> InputCharacter -> [State]
 delta givenStates nfa transCharacter = map (\trans -> (toState trans)) (getAllTransitionsFrom givenStates nfa transCharacter)
@@ -87,20 +87,20 @@ getDFATokenTypeMapFromNFATokenTypeMap newDFAToDFAPartition nfaTokenTypeMap termi
                                                                                     )) (Map.toList newDFAToDFAPartition))
 
 terminalSubsets :: Q -> NFA -> [[State]]
-terminalSubsets subSets nfa = filter (\subSet -> foldr (\state result -> result || elem state (NFA.terminalStates nfa)) False subSet) subSets
+terminalSubsets subSets nfa = filter (\subSet -> foldr (\state result -> result || elem state (Scanner.NFA.terminalStates nfa)) False subSet) subSets
 
 startSubsets :: Q -> NFA -> [State]
-startSubsets subsets nfa = head (filter (\subSet -> foldr (\state result -> result || state == NFA.startState nfa) False subSet) subsets)
+startSubsets subsets nfa = head (filter (\subSet -> foldr (\state result -> result || state == Scanner.NFA.startState nfa) False subSet) subsets)
                 
 convertNFAToDFA :: NFA -> DFA
 convertNFAToDFA nfa =
-  let q0 = emptyCharClosure [NFA.startState nfa] nfa
+  let q0 = emptyCharClosure [Scanner.NFA.startState nfa] nfa
       q = [q0]
       worklist = [q0]
       (qConfig, transTable, work) = processWorkList nfa q worklist Map.empty (getAlphaBet nfa)
       startSubset = startSubsets qConfig nfa
       terminalSubsetsFromNFA = terminalSubsets qConfig nfa
-  in  convertSubsetsToDFA (qConfig, transTable) startSubset terminalSubsetsFromNFA (NFA.categories nfa) (NFA.terminalStates nfa)
+  in  convertSubsetsToDFA (qConfig, transTable) startSubset terminalSubsetsFromNFA (Scanner.NFA.categories nfa) (Scanner.NFA.terminalStates nfa)
 
 
 instance Conversion NFA DFA where

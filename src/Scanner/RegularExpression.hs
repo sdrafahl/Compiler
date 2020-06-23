@@ -1,8 +1,8 @@
-module RegularExpression (
+module Scanner.RegularExpression (
   RegEx(..)
   ) where
 
-import TokenType
+import Scanner.TokenType
 
 data RegEx = RegEx [Char] TokenType
 

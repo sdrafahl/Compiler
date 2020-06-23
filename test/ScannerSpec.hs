@@ -1,14 +1,14 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 module ScannerSpec (spec) where
 
-import Import
-import Util
+import Misc.Import
+import Misc.Util
 import Test.Hspec
 import Test.Hspec.QuickCheck
-import Scanner
+import Scanner.Scanner
 import Data.Map
-import StateMachine
-import CharCategoryTable
+import Scanner.StateMachine
+import Scanner.CharCategoryTable
 
 
 spec :: Spec
