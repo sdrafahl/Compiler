@@ -15,6 +15,11 @@ import RecursiveAlgorithms.FoldingAlgorithm
 
 data First = First (Map NonTerminalOrTerminal (Set Terminal)) deriving (Eq, Show)
 
+getFirstForAllChildren :: [NonTerminalOrTerminal] -> First -> Set Terminal
+getFirstForAllChildren children first =
+  let firstForAllChildren = Data.List.map (\nonTermOrTerm -> (getFirst first nonTermOrTerm)) children
+  in  Data.List.foldl' (\setOfFirstForAllChildreny setForChildren -> Data.Set.union setOfFirstForAllChildreny setForChildren) Data.Set.empty firstForAllChildren
+
 addMappingToFirst :: NonTerminalOrTerminal -> Terminal -> First -> First
 addMappingToFirst key value (First values) =
   let ((setForTheKey :: Maybe (Set Terminal))) = Data.Map.lookup key values
