@@ -18,11 +18,23 @@ type Path = [NonTerminalOrTerminal]
 
 data CFG = CFG {nonTerminals :: Set NonTerminal, terminals :: Set Terminal, productionRules :: Set ProductionRule, startSymbol :: StartSymbol} deriving (Eq, Ord, Show)
 
+getNameOfNonTerminal :: NonTerminal -> String
+getNameOfNonTerminal (NonTerminal n) = n
+
 getParentFromProductionRule :: ProductionRule -> NonTerminal
 getParentFromProductionRule (ProductionRule (nonTerminalOrTerminal, _)) = nonTerminalOrTerminal
 
 getChildrenFromProductionRule :: ProductionRule -> [NonTerminalOrTerminal]
 getChildrenFromProductionRule (ProductionRule (_, children)) = children
+
+getTerminals :: CFG -> Set Terminal
+getTerminals (CFG _ terminals _ _) = terminals
+
+getStartSymbol :: CFG -> StartSymbol
+getStartSymbol (CFG _ _ _ start) = start
+
+getProductionsFromCFG :: CFG -> [ProductionRule]
+getProductionsFromCFG (CFG _ _ prodRules _) = Data.Set.toList prodRules
 
 isTerminal :: NonTerminalOrTerminal -> Bool
 isTerminal (Term (Terminal _)) = True
