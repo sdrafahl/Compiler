@@ -18,7 +18,7 @@ data First = First (Map NonTerminalOrTerminal (Set Terminal)) deriving (Eq, Show
 getFirstForAllChildren :: [NonTerminalOrTerminal] -> First -> Set Terminal
 getFirstForAllChildren children first =
   let firstForAllChildren = Data.List.map (\nonTermOrTerm -> (getFirst first nonTermOrTerm)) children
-  in  Data.List.foldl' (\setOfFirstForAllChildreny setForChildren -> Data.Set.union setOfFirstForAllChildreny setForChildren) Data.Set.empty firstForAllChildren
+  in  Data.List.foldl' (\setOfFirstForAllChildren setForChildren -> Data.Set.union setOfFirstForAllChildren setForChildren) Data.Set.empty firstForAllChildren
 
 addMappingToFirst :: NonTerminalOrTerminal -> Terminal -> First -> First
 addMappingToFirst key value (First values) =
@@ -56,14 +56,14 @@ addTerminalsToRHS rhs (x1:(x2:xs)) first
   | otherwise = (rhs, DidNotReachAllChildren)
       
 
-addTerminalsToFirst :: First -> ProductionRule  -> First
+addTerminalsToFirst :: First -> ProductionRule -> First
 addTerminalsToFirst first productionRule =
   let ((x :: NonTerminalOrTerminal):(xs :: [NonTerminalOrTerminal])) = getChildrenFromProductionRule productionRule
       (rhs :: Set Terminal) = Data.Set.delete (Terminal "δ") (getFirst first x)
       (rhs' :: Set Terminal, (flag :: Flag)) = addTerminalsToRHS rhs (x:xs) first
-      (rhs'' :: Set Terminal) = case flag of
-                                  ReachedAllChildren -> Data.Set.insert (Terminal "δ") rhs'
-                                  DidNotReachAllChildren -> rhs'
+      (rhs'' :: Set Terminal) = case (flag, Data.Set.member (Terminal "δ") (getFirst first x)) of
+                                  (ReachedAllChildren, True) -> Data.Set.insert (Terminal "δ") rhs'
+                                  _ -> rhs'
       (a :: NonTerminal) = getParentFromProductionRule productionRule
       (rhs''' :: Set Terminal) = Data.Set.union (rhs'') (getFirst first (NonTerm a))
   in  addFirst first (NonTerm a) rhs'''
