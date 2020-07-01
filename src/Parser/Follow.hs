@@ -21,6 +21,12 @@ getTerminalsFromFollow (Follow mappings) key = case (Data.Map.lookup key mapping
                                                  Just terminals' -> terminals'
                                                  Nothing -> Data.Set.empty
 
+
+getFollowForAllChildren :: [NonTerminal] -> Follow -> Set Terminal
+getFollowForAllChildren  children follow =
+  let firstForAllChildren = Data.List.map (\nonTermOrTerm -> (getTerminalsFromFollow follow nonTermOrTerm)) children
+  in  Data.List.foldl' (\setOfFirstForAllChildren setForChildren -> Data.Set.union setOfFirstForAllChildren setForChildren) Data.Set.empty firstForAllChildren
+
 addTerminalsForSomeKey :: Follow -> NonTerminal -> Set Terminal -> Follow
 addTerminalsForSomeKey (Follow mappings) key value =
   let existingValue = getTerminalsFromFollow (Follow mappings) key
