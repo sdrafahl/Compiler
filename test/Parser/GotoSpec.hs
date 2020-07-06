@@ -24,12 +24,14 @@ caseAProductions' = (Data.Set.fromList [ProductionRule (NonTerminal "Goal", [Non
 caseALRItem' = (Data.Set.fromList [LRItem (NonTerminal "Goal") [StackTop, Token (NonTerm (NonTerminal "List"))] (Terminal "eof")])
 caseATerminals' = (Data.Set.fromList [Terminal "(", Terminal ")"])
 initialAItems' = Data.Set.fromList [(LRItem (NonTerminal "Goal") [StackTop,Token (NonTerm (NonTerminal "List"))]  (Terminal "eof")), (LRItem (NonTerminal "List") [StackTop,Token (NonTerm (NonTerminal "List")),Token (NonTerm (NonTerminal "Pair"))] (Terminal "(")), (LRItem (NonTerminal "List") [StackTop,Token (NonTerm (NonTerminal "List")),Token (NonTerm (NonTerminal "Pair"))] (Terminal "eof")), (LRItem (NonTerminal "List") [StackTop,Token (NonTerm (NonTerminal "Pair"))] (Terminal "(")), (LRItem (NonTerminal "List") [StackTop,Token (NonTerm (NonTerminal "Pair"))] (Terminal "eof")), (LRItem (NonTerminal "Pair") [StackTop,Token (Term (Terminal "(")),Token (Term (Terminal ")"))] (Terminal "(")), (LRItem (NonTerminal "Pair") [StackTop,Token (Term (Terminal "(")),Token (Term (Terminal ")"))] (Terminal "eof")), (LRItem (NonTerminal "Pair") [StackTop,Token (Term (Terminal "(")),Token (NonTerm (NonTerminal "Pair")),Token (Term (Terminal ")"))] (Terminal "(")), (LRItem (NonTerminal "Pair") [StackTop,Token (Term (Terminal "(")),Token (NonTerm (NonTerminal "Pair")),Token (Term (Terminal ")"))] (Terminal "eof"))]
-
-                   
+expectedResult = Data.Set.fromList [LRItem (NonTerminal "Pair") [Token (Term (Terminal "(")), StackTop,Token (Term (Terminal ")"))] (Terminal "("), LRItem (NonTerminal "Pair") [Token (Term (Terminal "(")),StackTop,Token (Term (Terminal ")"))] (Terminal "eof"), LRItem (NonTerminal "Pair") [Token (Term (Terminal "(")),StackTop,Token (NonTerm (NonTerminal "Pair")),Token (Term (Terminal ")"))] (Terminal "("), LRItem (NonTerminal "Pair") [Token (Term (Terminal "(")),StackTop,Token (NonTerm (NonTerminal "Pair")),Token (Term (Terminal ")"))] (Terminal "eof"), LRItem (NonTerminal "Pair") [StackTop,Token (Term (Terminal "(")),Token (Term (Terminal ")"))] ( Terminal ")"), LRItem (NonTerminal "Pair") [StackTop,Token (Term (Terminal "(")),Token (NonTerm (NonTerminal "Pair")),Token (Term (Terminal ")"))] (Terminal ")")]
+  
 spec :: Spec
 spec = do
   describe "goto" $ do
-    it "Should apply a goto for the initial items" $ do goto caseAProductions' caseATerminals' initialAItems' (Term (Terminal "(")) `shouldBe` Data.Set.fromList [LRItem (NonTerminal "Pair") [Token (Term (Terminal "(")), StackTop,Token (Term (Terminal ")"))] (Terminal "("), LRItem (NonTerminal "Pair") [Token (Term (Terminal "(")),StackTop,Token (Term (Terminal ")"))] (Terminal "eof"), LRItem (NonTerminal "Pair") [Token (Term (Terminal "(")),StackTop,Token (NonTerm (NonTerminal "Pair")),Token (Term (Terminal ")"))] (Terminal "("), LRItem (NonTerminal "Pair") [Token (Term (Terminal "(")),StackTop,Token (NonTerm (NonTerminal "Pair")),Token (Term (Terminal ")"))] (Terminal "eof"), LRItem (NonTerminal "Pair") [StackTop,Token (Term (Terminal "(")),Token (Term (Terminal ")"))] ( Terminal ")"), LRItem (NonTerminal "Pair") [StackTop,Token (Term (Terminal "(")),Token (NonTerm (NonTerminal "Pair")),Token (Term (Terminal ")"))] (Terminal ")")]
+    it "Should apply a goto for the initial items" $ do goto caseAProductions' caseATerminals' initialAItems' (Term (Terminal "(")) `shouldBe` expectedResult
+    
+
 
 
 

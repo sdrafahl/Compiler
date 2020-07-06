@@ -21,6 +21,10 @@ data CFG = CFG {nonTerminals :: Set NonTerminal, terminals :: Set Terminal, prod
 getNameOfNonTerminal :: NonTerminal -> String
 getNameOfNonTerminal (NonTerminal n) = n
 
+isNonTerminal :: NonTerminalOrTerminal -> Bool
+isNonTerminal (NonTerm (NonTerminal _)) = True
+isNonTerminal _ = False
+
 getParentFromProductionRule :: ProductionRule -> NonTerminal
 getParentFromProductionRule (ProductionRule (nonTerminalOrTerminal, _)) = nonTerminalOrTerminal
 

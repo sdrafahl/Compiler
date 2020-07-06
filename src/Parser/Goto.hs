@@ -9,15 +9,13 @@ import Parser.CFG
 import Data.Set
 import Data.List
 import Debug.Trace
+import Data.Map
 
 goto :: Set ProductionRule -> Set Terminal -> Set LRItem -> NonTerminalOrTerminal -> Set LRItem
---goto _ _ _ _ = Data.Set.empty
 goto prods terms s x =
   let (foldOverLRItemsAlgo :: Set LRItem -> LRItem -> Set LRItem) = foldOverLRItems x
-      (moved' :: Set LRItem) = Debug.Trace.traceShow (Data.Set.foldl' foldOverLRItemsAlgo Data.Set.empty s) (Data.Set.foldl' foldOverLRItemsAlgo Data.Set.empty s)
+      (moved' :: Set LRItem) = (Data.Set.foldl' foldOverLRItemsAlgo Data.Set.empty s)
   in  closure terms prods moved'
-
--- closure terms prods moved'
 
 foldOverLRItems :: NonTerminalOrTerminal -> Set LRItem -> LRItem -> Set LRItem
 foldOverLRItems x accLrItems (LRItem alpha c a') =

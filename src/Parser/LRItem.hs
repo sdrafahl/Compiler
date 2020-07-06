@@ -23,6 +23,13 @@ splitAtContext tokens =
   let (Just index) = (elemIndex StackTop tokens)
   in  Data.List.splitAt index tokens
 
+takeEveryTokenAfterStackTop :: LRItem -> [NonTerminalOrTerminal]
+takeEveryTokenAfterStackTop (LRItem _ b _) =
+  let (_, y) = splitAtContext b
+  in  case y of
+        [] -> []
+        (x:xs) -> Data.List.map (\(Token token) -> token) xs
+
 closure :: Set Terminal -> Set ProductionRule -> Set LRItem -> Set LRItem
 closure terms prods lritems =
   let (fixedPointAlgo :: Set LRItem -> Set LRItem) = fixedPointAlgorithm terms prods
@@ -43,14 +50,20 @@ instance FixedPointAlgorithm (Set LRItem) where
 foldOverLrItems :: Set ProductionRule -> Set Terminal -> Set LRItem -> LRItem -> Set LRItem
 foldOverLrItems prods terms accLrItem (LRItem a b l) =
   let ((leftOfStack :: [TokenOrPlaceholder]),(rightWithStack :: [TokenOrPlaceholder])) = splitAtContext b
-      (rightOfStack :: [TokenOrPlaceholder]) = Data.List.tail rightWithStack
+      (rightOfStack :: [TokenOrPlaceholder]) = case rightWithStack of
+        [] -> []
+        (a:ab) -> ab
       (rightOfC :: [TokenOrPlaceholder]) = case rightOfStack of
         [_] -> []
+        [] -> []
         _ -> Data.List.tail rightOfStack
-      (Token headOfRightOfStack) = Data.List.head rightOfStack
+      headOfRightOfStack = case rightOfStack of
+        [] -> Nothing
+        (h:_) -> Just h
   in  case headOfRightOfStack of
-        (Term _) -> accLrItem
-        (NonTerm nonTerm) ->
+        Nothing -> accLrItem
+        Just (Token (Term _)) -> accLrItem
+        Just (Token (NonTerm nonTerm)) ->
           let (isCProductionFilter :: ProductionRule -> Bool) = isCProduction nonTerm
               (cProductions :: Set ProductionRule) = Data.Set.filter isCProductionFilter prods
               (first :: First) = createFirstMap prods terms
