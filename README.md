@@ -10,4 +10,4 @@
 `stack test`
 
 ## Status
-![Haskell CI](https://github.com/sdrafahl/Compiler/workflows/Haskell%20CI/badge.svg)
+![Haskell CI](https://github.com/sdrafahl/Compiler/workflows/Haskell%20CI/badge.svg?branch=master)
