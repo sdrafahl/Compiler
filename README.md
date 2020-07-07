@@ -8,3 +8,6 @@
 ## Run tests
 
 `stack test`
+
+## Status
+![Haskell CI](https://github.com/sdrafahl/Compiler/workflows/Haskell%20CI/badge.svg)
