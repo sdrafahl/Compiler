@@ -12,6 +12,7 @@ import Parser.CFG
 import RecursiveAlgorithms.FixedPoint
 import Parser.Goto
 import Debug.Trace
+import Data.Maybe
 
 data CC = CC [Set LRItem] deriving (Eq, Ord, Show)
 data Transitions = Transitions (Map (NonTerminalOrTerminal, Set LRItem) (Set LRItem)) deriving (Eq, Ord, Show)
@@ -20,6 +21,9 @@ data Marked = Marked (Set (Set LRItem)) deriving (Eq, Ord, Show)
 isMarked :: Set LRItem -> Marked -> Bool
 isMarked lrItem (Marked s) = Data.Set.member lrItem s
 
+findCC :: CC -> Set LRItem -> Maybe Int
+findCC (CC lrItems) lrItem = Data.List.findIndex (\lrItem' -> lrItem' == lrItem) lrItems
+  
 mark :: Set LRItem -> Marked -> Marked
 mark lrItem (Marked s) = Marked (Data.Set.insert lrItem s)
 
@@ -33,7 +37,8 @@ createComprehensiveCC terms prods goalLrItem =
       (initTransitions :: Transitions) = (Transitions Data.Map.empty)
       (initMarked :: Marked) = (Marked Data.Set.empty)
       (ccFixedPointAlgorithm' :: ((Marked,CC, Transitions) -> (Marked,CC, Transitions))) = ccFixedPointAlgorithm prods terms
-      (_, b', c) = (fixPointOperation (initMarked,initCC, initTransitions) ccFixedPointAlgorithm')
+      (_, (CC lrs), c) = (fixPointOperation (initMarked,initCC, initTransitions) ccFixedPointAlgorithm')
+      b' = (CC (Data.List.filter (\st -> (not (Data.List.null st))) lrs))
    in (b', c)
       
 instance FixedPointAlgorithm (Marked,CC, Transitions) where
@@ -61,7 +66,6 @@ foldOverUnMarked terms prods (accCC, trans) cci =
   in  Data.Set.foldl' foldOverCCi' (accCC, trans) everyXFollowingStackTop
 
   
-      
 foldOverCCi :: Set ProductionRule -> Set Terminal -> Set LRItem -> (CC, Transitions) -> [NonTerminalOrTerminal] -> (CC, Transitions)
 foldOverCCi prods terms cci ((CC lritems), trans) xs =
   let (foldOverxs' :: (CC, Transitions) -> NonTerminalOrTerminal -> (CC, Transitions)) = foldOverxs prods terms cci
