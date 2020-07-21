@@ -19,6 +19,12 @@ data Action = Shift Int | Reduce NonTerminal [NonTerminalOrTerminal] | Accept de
 data ActionTable = ActionTable (Map (Int, Terminal) Action) deriving (Eq, Ord, Show)
 data GotoTable = GotoTable (Map (Int, NonTerminal) Int) deriving (Eq, Ord, Show)
 
+getAction :: (Int, Terminal) -> ActionTable -> Maybe Action
+getAction key (ActionTable m) = Data.Map.lookup key m
+
+getGoto :: (Int, NonTerminal) -> GotoTable -> Maybe Int
+getGoto key (GotoTable m) = Data.Map.lookup key m
+
 addToActionTable :: (Int, Terminal) -> Action -> ActionTable -> ActionTable
 addToActionTable (j, c) action (ActionTable m) = (ActionTable (Data.Map.insert (j, c) action m))
 

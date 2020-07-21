@@ -12,7 +12,7 @@ data NonTerminal = NonTerminal String deriving (Eq, Ord, Show)
 data Terminal = Terminal String deriving (Eq, Ord, Show)
 data NonTerminalOrTerminal = Term Terminal | NonTerm NonTerminal deriving (Eq, Ord, Show)
 data ProductionRule = ProductionRule (NonTerminal, [NonTerminalOrTerminal]) deriving (Eq, Ord, Show)
-type StartSymbol = NonTerminalOrTerminal
+type StartSymbol = NonTerminal
 type ProductionChildren = [NonTerminalOrTerminal]
 type Path = [NonTerminalOrTerminal]
 
@@ -44,9 +44,8 @@ isTerminal :: NonTerminalOrTerminal -> Bool
 isTerminal (Term (Terminal _)) = True
 isTerminal _ = False
 
-getValueFromNonTermOrTerminal :: NonTerminalOrTerminal -> String
-getValueFromNonTermOrTerminal (Term (Terminal a)) = a
-getValueFromNonTermOrTerminal (NonTerm (NonTerminal a)) = a
+getValueFromNonTermOrTerminal :: NonTerminal -> String
+getValueFromNonTermOrTerminal (NonTerminal a) = a
 
 eleminateLeftRecursion :: CFG -> CFG
 eleminateLeftRecursion cfg =
@@ -54,11 +53,11 @@ eleminateLeftRecursion cfg =
       reduced = (Data.List.map (\groupOfProductionsWithTheSameFrom -> ((getParentFromProductionRule (Data.List.head groupOfProductionsWithTheSameFrom)), Data.List.map getChildrenFromProductionRule groupOfProductionsWithTheSameFrom)) groupsOfProductionsByFrom)
       newSet = (Data.List.foldl' (\newSet' (from, to) -> Data.Set.union newSet' (removeLeftRecursion from to)) Data.Set.empty reduced)
       newNonTerminals = (Data.Set.map (\(ProductionRule (from', _)) -> from') newSet)
-      newStartingSymbol =  case (Data.Set.member (startSymbol cfg) (Data.Set.map (\nonTerm -> NonTerm nonTerm) newNonTerminals)) of
+      newStartingSymbol =  case (Data.Set.member (startSymbol cfg) newNonTerminals) of
                              True -> (startSymbol cfg)
                              _ ->
                                let valueOfStarting = getValueFromNonTermOrTerminal (startSymbol cfg)
-                               in  (NonTerm (NonTerminal (valueOfStarting ++ "'")))
+                               in  (NonTerminal (valueOfStarting ++ "'"))
   in case newSet == (productionRules cfg) of
        False ->
          let newTerminals = Data.Set.union (terminals cfg) (Data.Set.fromList [Terminal "δ"])

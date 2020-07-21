@@ -30,6 +30,13 @@ mark lrItem (Marked s) = Marked (Data.Set.insert lrItem s)
 record :: (NonTerminalOrTerminal, Set LRItem) -> Set LRItem -> Transitions -> Transitions
 record key val (Transitions m) = (Transitions (Data.Map.insert key val m))
 
+getGoalLrItem :: CFG -> LRItem
+getGoalLrItem (CFG _ _ prods startSymbol') =
+  let (ProductionRule (a', b')) = Data.List.head (Data.Set.toList (Data.Set.filter (\(ProductionRule (a, b)) -> a == startSymbol') prods))
+      (b'' :: [TokenOrPlaceholder]) = Data.List.map (\t -> (Token t)) b'
+      (lrItem :: LRItem) = (LRItem a' b'' (Terminal "eof"))
+  in  lrItem
+      
 createComprehensiveCC :: Set Terminal -> Set ProductionRule -> LRItem -> (CC, Transitions)
 createComprehensiveCC terms prods goalLrItem =
   let (cc0 :: Set LRItem) = closure terms prods (Data.Set.fromList [goalLrItem])
