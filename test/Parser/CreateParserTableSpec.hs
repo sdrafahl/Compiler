@@ -64,8 +64,3 @@ spec :: Spec
 spec = do
   describe "createTables" $ do
     it "Should create the tables" $ do createTables caseANonTerminals' caseAProductions' caseATerminals' goalLrItem ccs `shouldBe` expectedResult
-
--- spec :: Spec
--- spec = do
---   describe "createTables" $ do
---     it "Should create the tables" $ do True `shouldBe` True
