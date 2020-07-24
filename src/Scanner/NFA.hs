@@ -22,7 +22,7 @@ instance Show (Transition InputCharacter) where
   show (Transition frmState input toState) = "Transition " ++ frmState ++ " " ++ (show input)  ++ " " ++ toState
 
 instance Show NFA where
-  show (NFA states startState terminalStates transitions cat) = "DFA " ++ (show states) ++ " " ++ startState ++ " " ++ (show terminalStates) ++ " " ++ (show transitions) ++ " " ++ (show cat) 
+  show (NFA states startState terminalStates transitions cat) = "NFA " ++ (show states) ++ " " ++ startState ++ " " ++ (show terminalStates) ++ " " ++ (show transitions) ++ " " ++ (show cat) 
 
 instance Show InputCharacter where
   show EmptyChar = " EmptyChar "

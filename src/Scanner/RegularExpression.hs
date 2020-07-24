@@ -4,5 +4,5 @@ module Scanner.RegularExpression (
 
 import Scanner.TokenType
 
-data RegEx = RegEx [Char] TokenType
+data RegEx = RegEx [Char] TokenType deriving (Eq, Ord, Show)
 

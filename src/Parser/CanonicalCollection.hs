@@ -34,7 +34,8 @@ getGoalLrItem :: CFG -> LRItem
 getGoalLrItem (CFG _ _ prods startSymbol') =
   let (ProductionRule (a', b')) = Data.List.head (Data.Set.toList (Data.Set.filter (\(ProductionRule (a, b)) -> a == startSymbol') prods))
       (b'' :: [TokenOrPlaceholder]) = Data.List.map (\t -> (Token t)) b'
-      (lrItem :: LRItem) = (LRItem a' b'' (Terminal "eof"))
+      (b''' :: [TokenOrPlaceholder]) = StackTop : b''
+      (lrItem :: LRItem) = (LRItem a' b''' (Terminal "eof"))
   in  lrItem
       
 createComprehensiveCC :: Set Terminal -> Set ProductionRule -> LRItem -> (CC, Transitions)
