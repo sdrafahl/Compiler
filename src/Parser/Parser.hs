@@ -28,6 +28,7 @@ import Scanner.Conversion
 import Scanner.NFAtoDFA
 import Scanner.DFAToScanner
 import Scanner.DFAMinimization
+import Parser.ParserTree
 
 data BottomUpParserStates = BottomUpParserStates CC ActionTable GotoTable deriving (Eq, Ord, Show)
 data Parser = Parser Scanner BottomUpParserStates deriving (Eq, Ord, Show)
@@ -80,45 +81,51 @@ createParserFromCFG (CFG nonterms terms prodRules startSymbol') =
       (parser :: Parser) = (Parser scanner states')
   in  parser      
       
-parse :: InputStream -> Parser -> (SyntaxStack, InputStream, ParserResult)
+parse :: InputStream -> Parser -> (SyntaxStack, InputStream, ParserResult, ParserTree)
 parse inStream (Parser scanner states') =
   let (stack :: SyntaxStack) = createStack
       (stack' :: SyntaxStack) = push (St Dollar) stack
       (stack'' :: SyntaxStack) = push (St (StackState 0)) stack'
       (scanner' :: Scanner, word :: Lexeme, inStream' :: InputStream,_) = nextWord scanner inStream
-  in  parse' word inStream' scanner' states' stack''
+      (s :: SyntaxStack, i :: InputStream, ps :: ParserResult, pts :: ParseTreeStack) = parse' word inStream' scanner' states' stack'' (ParseTreeStack [])      
+  in  (s, i, ps, createTreeFromStack pts)
 
-parse' :: Lexeme -> InputStream -> Scanner -> BottomUpParserStates -> SyntaxStack -> (SyntaxStack, InputStream, ParserResult)
-parse' word inStream scanner parserStateMachine stack =
-  let (result :: Accepted, stack''' :: SyntaxStack, word' :: Lexeme, (scanner'' :: Scanner, inStream'' :: InputStream)) = parseOnce (scanner, inStream) word stack parserStateMachine
+parse' :: Lexeme -> InputStream -> Scanner -> BottomUpParserStates -> SyntaxStack -> ParseTreeStack -> (SyntaxStack, InputStream, ParserResult, ParseTreeStack)
+parse' word inStream scanner parserStateMachine stack treeStack =
+  let (result :: Accepted, stack''' :: SyntaxStack, word' :: Lexeme, (scanner'' :: Scanner, inStream'' :: InputStream), parserTreeStack :: ParseTreeStack) = parseOnce (scanner, inStream) word stack parserStateMachine treeStack
   in  case result of
-        Accepted -> (stack''', inStream'', SuccessInParsing)
-        NotAccepted -> parse' word' inStream'' scanner'' parserStateMachine stack'''
-        Failed -> (stack''', inStream'', FailedToParse)
+        Accepted -> (stack''', inStream'', SuccessInParsing, parserTreeStack)
+        NotAccepted -> parse' word' inStream'' scanner'' parserStateMachine stack''' parserTreeStack
+        Failed -> (stack''', inStream'', FailedToParse, parserTreeStack)
   
-parseOnce :: (Scanner, InputStream) -> Lexeme -> SyntaxStack -> BottomUpParserStates -> (Accepted, SyntaxStack, Lexeme, (Scanner, InputStream))
-parseOnce (scanner, inStream) word stack (BottomUpParserStates (cc :: CC) (actionTable :: ActionTable) (gotoTable :: GotoTable)) =
+parseOnce :: (Scanner, InputStream) -> Lexeme -> SyntaxStack -> BottomUpParserStates -> ParseTreeStack -> (Accepted, SyntaxStack, Lexeme, (Scanner, InputStream), ParseTreeStack)
+parseOnce (scanner, inStream) word stack (BottomUpParserStates (cc :: CC) (actionTable :: ActionTable) (gotoTable :: GotoTable)) treeStack =
   let (topOfStack :: Maybe StackStateOrToken) = getTopOfStack stack
       (word'' :: Terminal) = case word of
         "" -> Terminal "eof"
         _ -> (Terminal word)
   in  case  topOfStack of
-    Nothing -> (Failed, stack, word, (scanner, inStream))
+    Nothing -> (Failed, stack, word, (scanner, inStream), treeStack)
     (Just (St (StackState s))) ->
       let (action :: Maybe Action) = (getAction (s, word'') actionTable)
       in  case action of
             (Just (Reduce a' b')) ->
               let (cardinality :: Int) = Data.List.length b'
                   (stack' :: SyntaxStack) = popn (cardinality * 2) stack
+                  (treeStack' :: ParseTreeStack, children :: [ParserTree]) = popnStack treeStack cardinality
+                  (newTree :: ParserTree) = (ParseTreeNode a' children)
+                  (treeStack'' :: ParseTreeStack) = pushTree treeStack' newTree
                   (Just (St (StackState state))) = getTopOfStack stack'
                   (stack'' :: SyntaxStack) = push (Tok (NonTerm a')) stack'
                   (Just stateInt) = getGoto (state, a') gotoTable
                   (stack''' :: SyntaxStack) = push (St (StackState stateInt)) stack''
-              in  (NotAccepted, stack''', word, (scanner, inStream))
+              in  (NotAccepted, stack''', word, (scanner, inStream), treeStack'')
             (Just (Shift si)) ->
               let (stack' :: SyntaxStack) = push (Tok (Term (Terminal word))) stack
+                  (parseTreeLeaf :: ParserTree) = createLeafe (Terminal word)
+                  (treeStack' :: ParseTreeStack) = pushparseTreeStack treeStack parseTreeLeaf
                   (stack'' :: SyntaxStack) = push (St (StackState si)) stack'
                   (scanner' :: Scanner, word' :: Lexeme, inStream' :: InputStream, _) = nextWord scanner inStream
-              in  (NotAccepted, stack'', word', (scanner', inStream'))
-            (Just Accept) -> (Accepted, stack, word, (scanner, inStream))
-            _ -> (Failed, stack, word, (scanner, inStream))
+              in  (NotAccepted, stack'', word', (scanner', inStream'), treeStack')
+            (Just Accept) -> (Accepted, stack, word, (scanner, inStream), treeStack)
+            _ -> (Failed, stack, word, (scanner, inStream), treeStack)

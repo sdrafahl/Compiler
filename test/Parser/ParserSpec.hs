@@ -15,6 +15,7 @@ import Scanner.RegularExpression
 import Parser.LRItem
 import Parser.Parser
 import Scanner.Scanner
+import Parser.ParserTree
 
 caseAProductions' = (Data.Set.fromList [
                         ProductionRule (NonTerminal "Goal", [NonTerm (NonTerminal "List")]),
@@ -32,10 +33,11 @@ cfg = (CFG caseANonTerminals' caseATerminals' caseAProductions' startSymbol')
 parser = createParserFromCFG cfg
 testInputStream = (InputStream "[]")
 expectedStack = SyntaxStack []
-(resultStack, _, _) = parse testInputStream parser
+(resultStack, _, _, tree) = parse testInputStream parser
 
 spec :: Spec
 spec = do
   describe "parse" $ do
     it "Should parse the input and return a stack" $ do resultStack `shouldBe` SyntaxStack [St Dollar,St (StackState 0),Tok (NonTerm (NonTerminal "List")),St (StackState 3)]
+    it "Should parse the input and return a parse tree" $ do tree `shouldBe` ParseTreeNode (NonTerminal "List") [ParseTreeNode (NonTerminal "Pair") [Leafe (Terminal "["),Leafe (Terminal "]")]]
     

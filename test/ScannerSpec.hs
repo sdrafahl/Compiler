@@ -73,7 +73,32 @@ spec = do
           InputStream ['b'],
           Just (TokenType "testTokenType2")
         )
-
+    it "Should handle invalid characters in stream" $
+        nextWord (Scanner
+                  (FailedTable empty)
+                  (DFATransitionTable (insert ("TestInitState", "testCat") "TestFinalState" (insert ("TestFinalState", "testCat2") "TestExtraState" empty)))
+                  (DFAacceptingStates (insert "TestFinalState" True empty))
+                  (TokenTypeTable (insert (GoodOrBadState "TestInitState") (TokenType "testTokenType") (insert (GoodOrBadState "TestFinalState") (TokenType "testTokenType2") (insert (GoodOrBadState "TestExtraState") (TokenType "testTokenType3") empty))))
+                  "TestInitState"
+                  (CharCatTable (insert 'a' "testCat" (insert 'b' "testCat2" empty)))
+                  0
+                 ) (InputStream [' ' ,'a', 'b'])
+        `shouldBe`
+        (
+          (Scanner
+            (FailedTable (insert ("TestInitState", 0) True empty))
+            (DFATransitionTable (insert ("TestInitState", "testCat") "TestFinalState" (insert ("TestFinalState", "testCat2") "TestExtraState" empty)))
+            (DFAacceptingStates (insert "TestFinalState" True empty))
+            (TokenTypeTable (insert (GoodOrBadState "TestInitState") (TokenType "testTokenType") (insert (GoodOrBadState "TestFinalState") (TokenType "testTokenType2") (insert (GoodOrBadState "TestExtraState") (TokenType "testTokenType3") empty))))
+            "TestInitState"
+            (CharCatTable (insert 'a' "testCat" (insert 'b' "testCat2" empty)))
+            0
+          ),
+          [],
+          InputStream [' ' ,'a' ,'b'],
+          Just BadTokenType
+        )
+  
 
 
 
