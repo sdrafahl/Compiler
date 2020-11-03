@@ -9,8 +9,16 @@ import Data.Map
 import Debug.Trace
 import Parser.CFG
 
-data ParserTree = ParseTreeNode NonTerminal [ParserTree] | Leafe Terminal | EmptyTree deriving (Eq, Ord, Show)
+data ParserTree = ParseTreeNode NonTerminal [ParserTree] | Leafe Terminal deriving (Eq, Ord, Show)
 data ParseTreeStack = ParseTreeStack [ParserTree] deriving (Eq, Ord, Show)
+
+getGrammarFromParseTree :: ParserTree -> NonTerminalOrTerminal
+getGrammarFromParseTree (ParseTreeNode g _) = NonTerm g
+getGrammarFromParseTree (Leafe g) = Term g
+
+getChildrenInTree :: ParserTree -> [ParserTree]
+getChildrenInTree (ParseTreeNode _ a) = a
+getChildrenInTree (Leafe _) = []
 
 createLeafe :: Terminal -> ParserTree
 createLeafe term = Leafe term
@@ -35,6 +43,5 @@ pushTree (ParseTreeStack st) tr = (ParseTreeStack (st ++ [tr]))
 
 createTreeFromStack :: ParseTreeStack -> ParserTree
 createTreeFromStack  (ParseTreeStack [a]) = a
-createTreeFromStack  (ParseTreeStack []) = EmptyTree
 createTreeFromStack  (ParseTreeStack (x:_)) = x
 

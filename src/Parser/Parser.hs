@@ -38,6 +38,12 @@ data SyntaxStack = SyntaxStack [StackStateOrToken] deriving (Eq, Ord, Show)
 data Accepted = NotAccepted | Accepted | Failed deriving (Eq, Ord, Show)
 data ParserResult = FailedToParse | SuccessInParsing deriving (Eq, Ord, Show)
 
+data TreeRow = TreeRow Int deriving (Eq, Ord, Show)
+data TreeColumn = TreeColumn Int deriving (Eq, Ord, Show)
+
+data Row = Row (Map TreeColumn NonTerminalOrTerminal) deriving (Eq, Ord, Show)
+data ParseTreeMap = ParseTreeMap (Map (TreeRow) Row) deriving (Eq, Ord, Show)
+
 push :: StackStateOrToken -> SyntaxStack -> SyntaxStack
 push stackOrToken (SyntaxStack st) = (SyntaxStack (st ++ [stackOrToken]))
 
