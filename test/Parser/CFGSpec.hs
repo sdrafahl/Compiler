@@ -19,7 +19,7 @@ import Parser.CFG
 spec :: Spec
 spec = do
   describe "eleminateLeftRecursion" $ do
-    it "Should elimate left recursion from case A" $ eleminateLeftRecursion (CFG (Data.Set.fromList [(NonTerminal "Fee")]) (Data.Set.fromList [(Terminal "A"), (Terminal "B")])  (Data.Set.fromList [(ProductionRule (NonTerminal "Fee", [(NonTerm (NonTerminal "Fee")) ,(Term (Terminal "A"))])), (ProductionRule (NonTerminal "Fee", [ (Term (Terminal "B"))]))]) (NonTerminal "Fee"))
+    it "Should eliminate left recursion from case A" $ eleminateLeftRecursion (CFG (Data.Set.fromList [(NonTerminal "Fee")]) (Data.Set.fromList [(Terminal "A"), (Terminal "B")])  (Data.Set.fromList [(ProductionRule (NonTerminal "Fee", [(NonTerm (NonTerminal "Fee")) ,(Term (Terminal "A"))])), (ProductionRule (NonTerminal "Fee", [ (Term (Terminal "B"))]))]) (NonTerminal "Fee"))
       `shouldBe`
       (CFG (Data.Set.fromList [(NonTerminal "Fee"), (NonTerminal "Fee'")]) (Data.Set.fromList [(Terminal "A"), (Terminal "B"), (Terminal "δ")]) (Data.Set.fromList [ProductionRule (NonTerminal "Fee",[Term (Terminal "B"),NonTerm (NonTerminal "Fee'")]),ProductionRule (NonTerminal "Fee'",[Term (Terminal "A"),NonTerm (NonTerminal "Fee'")]),ProductionRule (NonTerminal "Fee'", [Term (Terminal "\948")])]) (NonTerminal "Fee"))
 
