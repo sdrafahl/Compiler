@@ -301,6 +301,7 @@ hasAMemeber indicies sti = hasAMemeber' indicies sti False
 
 hasAMemeber' :: [TreeNodeIndex] -> Set TreeNodeIndex -> Bool -> Bool
 hasAMemeber' _ _ True = True
+hasAMemeber' [] _ b = b
 hasAMemeber' (x:xs) s False = hasAMemeber' xs s (Data.Set.member x s)
 
 addVisited :: [TreeNodeIndex] -> Set TreeNodeIndex -> Set TreeNodeIndex
