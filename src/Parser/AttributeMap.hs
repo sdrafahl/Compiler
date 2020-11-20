@@ -105,8 +105,8 @@ getDependentKeys (AttributeSet m) =
   let (attList :: [(String, Attribute)]) = (Data.Map.toList m)
   in  (Data.List.intercalate [] (Data.List.intercalate [] (Data.List.map (\(k, att) -> gkey att) attList)))
   where
-    gkey (SynthesizedAttribute k _) = [[k]]
-    gkey (SynthesizedAttributeInteralEval k _) = [k]
+    gkey (SynthesizedAttribute _ _) = [[]]
+    gkey (SynthesizedAttributeInteralEval _ _) = []
     gkey (SynthesizedAttributeEval k _) = [[k]]
     gkey (Inherited k _) = [[k]]
     gkey NullAttribute = []
@@ -148,6 +148,9 @@ getAllIndicies (ParseTreeIndexMap m) = Data.List.map (\(k, _) -> k) (Data.Map.to
 
 getStartOfChain :: DependencyChain -> EnqueuedItem
 getStartOfChain (DependencyChain (x:xs)) = x
+
+getEndOfChain :: DependencyChain -> [EnqueuedItem]
+getEndOfChain (DependencyChain (x:xs)) = xs
 
 getLastItemOfChain :: DependencyChain -> EnqueuedItem
 getLastItemOfChain (DependencyChain xs) = last xs
@@ -267,7 +270,7 @@ isDependent from to agm ptm =
         (Nothing, _) -> False
         (_, Nothing) -> False
         (Just attributeSetFrom, Just attributeSetTo) ->
-          let (keysItDependsOn :: [String]) = getDependentKeys attributeSetFrom
+          let (keysItDependsOn :: [String]) = (getDependentKeys attributeSetFrom) 
               (keysInToNode :: [String]) = getKeys attributeSetTo
           in  hasSharedValue keysItDependsOn keysInToNode
 
@@ -335,20 +338,20 @@ getRootOfChain ptim agm index key =
   in  indicies  
           
 getRootOfChain' :: ParseTreeIndexMap -> AttributeGrammarMap -> TreeNodeIndex -> String -> Set TreeNodeIndex -> ([TreeNodeIndex], Set TreeNodeIndex)
-getRootOfChain' ptim agm index key visited =
+getRootOfChain' ptim agm index key visited' =
   let (dependentIndicies :: [TreeNodeIndex]) = (getDependents ptim agm index)
-      (dependentIndicies' :: [TreeNodeIndex]) = Data.List.filter (\ind -> not (Data.Set.member ind visited)) dependentIndicies
+      (dependentIndicies' :: [TreeNodeIndex]) = Data.List.filter (\ind -> not (Data.Set.member ind visited')) dependentIndicies
       (keys' :: [[String]]) = Data.List.map (\index' -> getKeysThatAreDependent index index' agm ptim) dependentIndicies'
       (dependentIndiciesAndKeys :: [(TreeNodeIndex, [String])]) = Data.List.zip dependentIndicies' keys'
-      (visited' :: Set TreeNodeIndex) = Data.Set.insert index visited
+      (visited'' :: Set TreeNodeIndex) = Data.Set.insert index visited'
   in  case (dependentIndicies') of
-    [] -> ([index], visited')
+    [] -> ([index], visited'')
     _ ->
       let (indiciesAndVisited :: [([TreeNodeIndex], Set TreeNodeIndex)]) = dependentIndiciesAndKeys >>= chkKey 
-          (roots :: ([TreeNodeIndex], Set TreeNodeIndex)) = Data.List.foldl' (\(indiciesAcc, visitedAcc) (indicies, visited'') -> ((indiciesAcc ++ indicies), Data.Set.union visited'' visitedAcc)) ([], Data.Set.empty) indiciesAndVisited
+          (roots :: ([TreeNodeIndex], Set TreeNodeIndex)) = Data.List.foldl' (\(indiciesAcc, visitedAcc) (indicies, visited''') -> ((indiciesAcc ++ indicies), Data.Set.union visited''' visitedAcc)) ([], Data.Set.empty) indiciesAndVisited
       in  roots
       where chkKey (_, []) = []
-            chkKey (ind, xs) = Data.List.map (\k -> getRootOfChain' ptim agm ind k visited') xs
+            chkKey (ind, xs) = Data.List.map (\k -> getRootOfChain' ptim agm ind k visited'') xs
       
                   
 ---------------------------------------------------------------------------------------
@@ -363,8 +366,16 @@ getFullChain ptim agm index key =
       (keysForIndicies :: [[String]]) = (Data.List.map (\ind -> getKeysAtIndex ptim agm ind) indicies) -- debug
       (keysAndIndicies :: [(TreeNodeIndex, [String])]) =  (Data.List.zip indicies keysForIndicies)
       (chains :: [[DependencyChain]]) =  (Data.List.map (\indexAndKeys -> getDependencyChainsForKeys ptim agm indexAndKeys) keysAndIndicies)
-  in  Data.List.intercalate [] chains
+  in  (mergeChains (Data.List.intercalate [] chains))
 -- debug
+
+mergeChains :: [DependencyChain] -> [DependencyChain]
+mergeChains chains =
+  let (groupsByEndOfChains :: [[DependencyChain]]) = (Data.List.groupBy (\a b -> (getIndex (getStartOfChain a)) == (getIndex (getStartOfChain b))) chains)
+  in  Data.List.map (\groupOfChains -> Data.List.foldr1 apChains groupOfChains) groupsByEndOfChains
+
+apChains :: DependencyChain -> DependencyChain -> DependencyChain
+apChains chain1 chain2 = (DependencyChain ((getStartOfChain chain1) : (getEndOfChain chain1) ++ (getEndOfChain chain2)))
 
 getDependencyChain :: ParseTreeIndexMap -> AttributeGrammarMap -> TreeNodeIndex -> String -> DependencyChain
 getDependencyChain ptim agm index key =
@@ -414,31 +425,31 @@ createPriorityQueue ptim agm =
   let (allTreeIndicies :: [TreeNodeIndex]) = getAllIndicies ptim
       (allTreeIndiciesAndAttributes :: [(TreeNodeIndex, Maybe AttributeSet)]) = (Data.List.map (\index -> (index, searchIndexForAttributeSet agm ptim index)) allTreeIndicies) --correct
       (allTreeIndiciesAndAttributesAndkeys :: [(TreeNodeIndex, Maybe AttributeSet, Maybe [String])]) = Data.List.map (\(index, mba) -> (index, mba, fmap (\at -> getKeys at) mba)) allTreeIndiciesAndAttributes
-      (chains' :: [Maybe [[DependencyChain]]]) = Data.List.map (\(index, maybeatt, maybeKeys) -> fmap (\keys' -> (Data.List.map (\key -> getFullChain ptim agm index key) keys')) maybeKeys) allTreeIndiciesAndAttributesAndkeys
-      (chains :: [Maybe [DependencyChain]]) = Data.List.map (\maybeChainOfChains -> fmap (\chainOfChain -> Data.List.intercalate [] chainOfChain) maybeChainOfChains) chains'
+      (chains' :: [Maybe [[DependencyChain]]]) = Data.List.map (\(index, maybeatt, maybeKeys) -> fmap (\keys' -> (Data.List.map (\key -> (getFullChain ptim agm index key)) keys')) maybeKeys) allTreeIndiciesAndAttributesAndkeys
+      (chains :: [Maybe [DependencyChain]]) = Data.List.map (\maybeChainOfChains -> fmap (\chainOfChain -> Data.List.intercalate [] (chainOfChain)) maybeChainOfChains) chains'
       (validChains :: [Maybe [DependencyChain]]) = Data.List.filter (\maybeChain -> isJust maybeChain) chains
-      (chainsOfChains :: [[DependencyChain]]) = Data.List.map (\(Just c) -> c) validChains
-      (chain :: [DependencyChain]) = intercalate [] chainsOfChains
+      (chainsOfChains :: [[DependencyChain]]) = (Data.List.map (\(Just c) -> c) validChains)
+      (chain :: [DependencyChain]) = (intercalate [] chainsOfChains)
   in  (PriorityQueue chain)
 
 
 -- need to eliminate internal(to the nodes) cycles before this is called
 processAttribute :: String -> Attribute -> TreeNodeIndex -> AttributeGrammarMap -> ParseTreeIndexMap -> ProcessedIndexMap -> AttributeSet -> ProcessedIndexMap
 processAttribute key (SynthesizedAttribute _ value) index agm ptm pm _ = addValue value key index pm 
-processAttribute keyOfAtt (SynthesizedAttributeInteralEval keys eval) index agm ptm pm as =
-  let (attValues :: [(Maybe AttributeValue, String)]) = Data.List.map (\keyForValue -> ((getValue (index, keyForValue) pm), keyForValue)) keys
-      (attsNeedTobeEvaluated :: [String]) = Data.List.map (\(Nothing, d) -> d) (Data.List.filter (\(maybeAtt, key) -> isNothing maybeAtt) attValues)
-      (attsNeedTobeEval :: [(String, Attribute)]) = Data.List.map (\(k', Just a') -> (k', a')) (Data.List.filter (\(k, a) -> isJust a) (Data.List.map (\key' -> (key' ,getAttribute key' as)) attsNeedTobeEvaluated)) 
+processAttribute keyOfAtt (SynthesizedAttributeInteralEval keys' eval) index agm ptm pm as =
+  let (attValues :: [(Maybe AttributeValue, String)]) = (Data.List.map (\keyForValue -> ((getValue (index, keyForValue) pm), keyForValue)) keys')
+      (attsNeedTobeEvaluated :: [String]) = (Data.List.map (\(Nothing, d) -> d) (Data.List.filter (\(maybeAtt, _) -> isNothing maybeAtt) attValues))
+      (attsNeedTobeEval :: [(String, Attribute)]) = Data.List.map (\(k', Just a') -> (k', a')) (Data.List.filter (\(_, a) -> isJust a) (Data.List.map (\k -> (k ,getAttribute k as)) attsNeedTobeEvaluated)) 
       (pm' :: ProcessedIndexMap) = Data.List.foldl' (\pm'' (key', att) -> processAttribute key' att index agm ptm pm'' as) pm attsNeedTobeEval
       (attsAlreadyEvaluated :: [AttributeValue]) = Data.List.map (\(Just a, _) -> a) (Data.List.filter (\(evaluatedAtt, _) -> isJust evaluatedAtt) attValues)
       (maybeValues :: [Maybe AttributeValue]) = getValues (Data.List.map (\keyOfAtt -> (index, keyOfAtt)) attsNeedTobeEvaluated) pm'
       (values :: [AttributeValue]) = Data.List.map (\(Just a) -> a) (Data.List.filter (\matv -> isJust matv) maybeValues)
-      (allValues :: [AttributeValue]) = values ++ attsAlreadyEvaluated
+      (allValues :: [AttributeValue]) = (values ++ attsAlreadyEvaluated)
       (evaluatedVal :: AttributeValue) = eval allValues      
   in  addValue evaluatedVal keyOfAtt index pm'
 processAttribute keyOfAtt (SynthesizedAttributeEval key eval) index agm ptm pm as =
   let (childIndicies :: [(TreeNodeIndex, String)]) = (Data.List.map (\index' -> (index', key)) (searchForChildrenIndicies index ptm))
-      (childValues :: [AttributeValue]) = Debug.Trace.traceShow childIndicies (Data.List.map (\(Just m) -> m) (Data.List.filter (\f -> isJust f) (getValues childIndicies pm)))
+      (childValues :: [AttributeValue]) = (Data.List.map (\(Just m) -> m) (Data.List.filter (\f -> isJust f) (getValues childIndicies pm)))
       (newValue :: AttributeValue) = eval childValues
       (pm' :: ProcessedIndexMap) = addValue newValue keyOfAtt index pm
   in  pm'
@@ -475,7 +486,7 @@ processChain :: DependencyChain -> AttributeGrammarMap -> ParseTreeIndexMap -> P
 processChain Incomplete _ _ processed' pset = (processed', pset)
 processChain Empty _ _ processed' pset = (processed', pset)
 processChain chain agm ptim processed' pset = 
-  let (itemsToProcess :: [EnqueuedItem]) = Debug.Trace.traceShow (getItemsInOrder chain) (getItemsInOrder chain)
+  let (itemsToProcess :: [EnqueuedItem]) = getItemsInOrder chain
       (processedChainResults :: (ProcessedIndexMap, ProcessedNodes)) = Data.List.foldl' (\(pimacc, pnacc) enqItem -> processNode (getIndex enqItem) pnacc pimacc agm ptim) (processed', pset) itemsToProcess
   in  processedChainResults
 
@@ -491,7 +502,7 @@ processQueue queue agm ptm =
 evaluateParseTreeWithAttributes :: ParserTree -> AttributeGrammarMap -> ProcessedIndexMap
 evaluateParseTreeWithAttributes tree agm =
   let (ptm :: ParseTreeIndexMap) = createParseTreeIndexMap tree
-      (que :: PriorityQueue) = createPriorityQueue ptm agm
+      (que :: PriorityQueue) = (createPriorityQueue ptm agm)
       (processed' :: ProcessedIndexMap, _) = processQueue que agm ptm
   in  processed'
         
