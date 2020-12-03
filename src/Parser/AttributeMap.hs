@@ -419,7 +419,6 @@ getDependencyChain' ptim agm visitedNodes dcacc =
 
 ---------------------------------------------------------------------------------------      
 
--- trace
 createPriorityQueue :: ParseTreeIndexMap -> AttributeGrammarMap -> PriorityQueue
 createPriorityQueue ptim agm =
   let (allTreeIndicies :: [TreeNodeIndex]) = getAllIndicies ptim
@@ -434,26 +433,26 @@ createPriorityQueue ptim agm =
 
 
 -- need to eliminate internal(to the nodes) cycles before this is called
-processAttribute :: String -> Attribute -> TreeNodeIndex -> AttributeGrammarMap -> ParseTreeIndexMap -> ProcessedIndexMap -> AttributeSet -> ProcessedIndexMap
-processAttribute key (SynthesizedAttribute _ value) index agm ptm pm _ = addValue value key index pm 
-processAttribute keyOfAtt (SynthesizedAttributeInteralEval keys' eval) index agm ptm pm as =
+processAttribute :: String -> Attribute -> TreeNodeIndex -> ParseTreeIndexMap -> ProcessedIndexMap -> AttributeSet -> ProcessedIndexMap
+processAttribute key (SynthesizedAttribute _ value) index _ pm _ = addValue value key index pm 
+processAttribute keyOfAtt (SynthesizedAttributeInteralEval keys' eval) index ptm pm as =
   let (attValues :: [(Maybe AttributeValue, String)]) = (Data.List.map (\keyForValue -> ((getValue (index, keyForValue) pm), keyForValue)) keys')
       (attsNeedTobeEvaluated :: [String]) = (Data.List.map (\(Nothing, d) -> d) (Data.List.filter (\(maybeAtt, _) -> isNothing maybeAtt) attValues))
       (attsNeedTobeEval :: [(String, Attribute)]) = Data.List.map (\(k', Just a') -> (k', a')) (Data.List.filter (\(_, a) -> isJust a) (Data.List.map (\k -> (k ,getAttribute k as)) attsNeedTobeEvaluated)) 
-      (pm' :: ProcessedIndexMap) = Data.List.foldl' (\pm'' (key', att) -> processAttribute key' att index agm ptm pm'' as) pm attsNeedTobeEval
+      (pm' :: ProcessedIndexMap) = Data.List.foldl' (\pm'' (key', att) -> processAttribute key' att index ptm pm'' as) pm attsNeedTobeEval
       (attsAlreadyEvaluated :: [AttributeValue]) = Data.List.map (\(Just a, _) -> a) (Data.List.filter (\(evaluatedAtt, _) -> isJust evaluatedAtt) attValues)
       (maybeValues :: [Maybe AttributeValue]) = getValues (Data.List.map (\keyOfAtt -> (index, keyOfAtt)) attsNeedTobeEvaluated) pm'
       (values :: [AttributeValue]) = Data.List.map (\(Just a) -> a) (Data.List.filter (\matv -> isJust matv) maybeValues)
       (allValues :: [AttributeValue]) = (values ++ attsAlreadyEvaluated)
       (evaluatedVal :: AttributeValue) = eval allValues      
   in  addValue evaluatedVal keyOfAtt index pm'
-processAttribute keyOfAtt (SynthesizedAttributeEval key eval) index agm ptm pm as =
+processAttribute keyOfAtt (SynthesizedAttributeEval key eval) index ptm pm as =
   let (childIndicies :: [(TreeNodeIndex, String)]) = (Data.List.map (\index' -> (index', key)) (searchForChildrenIndicies index ptm))
       (childValues :: [AttributeValue]) = (Data.List.map (\(Just m) -> m) (Data.List.filter (\f -> isJust f) (getValues childIndicies pm)))
       (newValue :: AttributeValue) = eval childValues
       (pm' :: ProcessedIndexMap) = addValue newValue keyOfAtt index pm
   in  pm'
-processAttribute keyOfAtt (Inherited key eval) index agm ptm pm as =
+processAttribute keyOfAtt (Inherited key eval) index ptm pm as =
   case (searchForParentOfIndex index ptm) of
     Nothing -> pm
     Just parentIndex ->
@@ -463,13 +462,13 @@ processAttribute keyOfAtt (Inherited key eval) index agm ptm pm as =
           let (newValue :: AttributeValue) = eval parentValue
               (pm' :: ProcessedIndexMap) = addValue newValue keyOfAtt index pm
           in  pm'
-processAttribute _ NullAttribute _ _ _ pm _ = pm
+processAttribute _ NullAttribute _ _ pm _ = pm
       
       
 processAttributeSet :: AttributeSet -> TreeNodeIndex -> AttributeGrammarMap -> ParseTreeIndexMap -> ProcessedIndexMap -> ProcessedNodes -> (ProcessedIndexMap, ProcessedNodes)
 processAttributeSet attSet index agm ptm pm pn =
   let (attsAndKeys :: [(String, Attribute)]) = getAttributes attSet
-      (pm' :: ProcessedIndexMap) = Data.List.foldl' (\pm'' (k, att) -> processAttribute k att index agm ptm pm'' attSet) pm attsAndKeys
+      (pm' :: ProcessedIndexMap) = Data.List.foldl' (\pm'' (k, att) -> processAttribute k att index ptm pm'' attSet) pm attsAndKeys
       (pn' :: ProcessedNodes) = processed index pn
   in  (pm', pn')
       

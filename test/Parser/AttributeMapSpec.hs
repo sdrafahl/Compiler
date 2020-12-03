@@ -66,17 +66,19 @@ attributeMapC = (AttributeGrammarMap (Data.Map.fromList [(NonTerm nonTermParent0
 parseTreeC = (ParseTreeNode nonTermParent0 [(ParseTreeNode nonTermParent1 [(Leafe child3)])])
 expectedProcessedIndexMapC =  ProcessedIndexMap (Data.Map.fromList [((TreeNodeIndex [0],"name"),StringAttribute "parent 0"),((TreeNodeIndex [0,0],"childName"),StringAttribute "parent 2"),((TreeNodeIndex [0,0],"name"),StringAttribute "parent 0parent 2"),((TreeNodeIndex [0,0],"parentName"),StringAttribute "parent 0"),((TreeNodeIndex [0,0,0],"name"),StringAttribute "parent 2")])
 
-
-
+testParseTreeIndexMapA = ParseTreeIndexMap (Data.Map.fromList [(TreeNodeIndex [0],NonTerm (NonTerminal "List"))])
+testParseTreeIndexMapB = ParseTreeIndexMap (Data.Map.fromList [(TreeNodeIndex [0],NonTerm (NonTerminal "List")),(TreeNodeIndex [0,0],Term (Terminal "(")),(TreeNodeIndex [0,1],Term (Terminal ")"))])
 
 spec :: Spec
 spec = do
   describe "AttributeMapSpec" $ do
     describe "evaluateParseTreeWithAttributes" $ do
-      describe "Parse Tree A" $ do        
-        it "Should evaluate parse tree C" $ evaluateParseTreeWithAttributes parseTreeC attributeMapC `shouldBe` expectedProcessedIndexMapC
-        it "Should evaluate parse tree A" $ evaluateParseTreeWithAttributes parseTreeA attributeMapA `shouldBe` expectedProcessedIndexMapA
-        it "Should evaluate parse tree B" $ evaluateParseTreeWithAttributes parseTreeB attributeMapB `shouldBe` expectedProcessedIndexMapB        
-
-
+      it "Should evaluate parse tree C" $ evaluateParseTreeWithAttributes parseTreeC attributeMapC `shouldBe` expectedProcessedIndexMapC
+      it "Should evaluate parse tree A" $ evaluateParseTreeWithAttributes parseTreeA attributeMapA `shouldBe` expectedProcessedIndexMapA
+      it "Should evaluate parse tree B" $ evaluateParseTreeWithAttributes parseTreeB attributeMapB `shouldBe` expectedProcessedIndexMapB        
+    describe "createParseTreeIndexMap" $ do
+      it "Should evaluate a empty parse tree into ParseTreeIndexMap" $ createParseTreeIndexMap (ParseTreeNode listNonTerm []) `shouldBe` testParseTreeIndexMapA
+      it "Should evaluate a parse tree with children into a ParseTreeIndexMap" $ createParseTreeIndexMap parseTreeA `shouldBe` testParseTreeIndexMapB
+    describe "createPriorityQueue" $ do
+      it "Should evaluate priority queue" $ show (createPriorityQueue testParseTreeIndexMapB attributeMapA) `shouldBe` "PriorityQueue [DependencyChain [EnqueuedItem (TreeNodeIndex [0]) (SynthesizedAttributeEval \"l\" [AttributeValue] -> AttributeValue),EnqueuedItem (TreeNodeIndex [0,0]) (SynthesizedAttribute \"l\" (IntAttribute 1)),EnqueuedItem (TreeNodeIndex [0,1]) (SynthesizedAttribute \"l\" (IntAttribute 1))]]"
 
