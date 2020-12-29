@@ -13,8 +13,8 @@ import Parser.Parser
 import Data.Maybe
 import Debug.Trace
 
-data AttributeValue = StringAttribute String | IntAttribute Int | BoolAttribute Bool deriving (Eq, Ord, Show)
-data Attribute = SynthesizedAttribute String AttributeValue | SynthesizedAttributeInteralEval [String] ([AttributeValue] -> AttributeValue) | SynthesizedAttributeEval String ([AttributeValue] -> AttributeValue) | Inherited String (AttributeValue -> AttributeValue) | NullAttribute deriving (Eq, Ord, Show)
+data AttributeValue = StringAttribute String | IntAttribute Int | BoolAttribute Bool | MapAttribute (Map String AttributeValue) deriving (Eq, Ord, Show)
+data Attribute = SynthesizedAttribute String AttributeValue | SynthesizedAttributeInteralEval [String] ([AttributeValue] -> AttributeValue) | SynthesizedAttributeEval String ([AttributeValue] -> AttributeValue) | Inherited String (AttributeValue -> AttributeValue) deriving (Eq, Ord, Show)
 data AttributeSet = AttributeSet (Map String Attribute) deriving (Eq, Ord, Show)
 
 instance Show ([AttributeValue] -> AttributeValue) where
@@ -109,7 +109,6 @@ getDependentKeys (AttributeSet m) =
     gkey (SynthesizedAttributeInteralEval _ _) = []
     gkey (SynthesizedAttributeEval k _) = [[k]]
     gkey (Inherited k _) = [[k]]
-    gkey NullAttribute = []
 
 getKeys :: AttributeSet -> [String]
 getKeys (AttributeSet m) = keys m
@@ -283,7 +282,6 @@ dependsOn (SynthesizedAttributeEval key _) index agm ptm = case (searchIndexForA
 dependsOn (Inherited key _) index agm ptm = case (searchIndexForAttributeSet agm ptm index) of
   Nothing -> False
   Just attSet -> hasKey key attSet
-dependsOn NullAttribute _ _ _ = False
 
 getDependsOn :: String -> TreeNodeIndex -> AttributeGrammarMap -> ParseTreeIndexMap -> Maybe Attribute
 getDependsOn key index agm ptm = case (searchIndexForAttributeSet agm ptm index) of
@@ -414,7 +412,6 @@ getDependencyChain' ptim agm visitedNodes dcacc =
                 case (getDependsOn key parentIndex agm ptim) of
                   Nothing -> Incomplete
                   Just att -> getDependencyChain' ptim agm (addVisited [parentIndex] visitedNodes) (addItemToQueue dcacc (EnqueuedItem parentIndex att))                
-        NullAttribute -> dcacc
               
 
 ---------------------------------------------------------------------------------------      
@@ -462,7 +459,6 @@ processAttribute keyOfAtt (Inherited key eval) index ptm pm as =
           let (newValue :: AttributeValue) = eval parentValue
               (pm' :: ProcessedIndexMap) = addValue newValue keyOfAtt index pm
           in  pm'
-processAttribute _ NullAttribute _ _ pm _ = pm
       
       
 processAttributeSet :: AttributeSet -> TreeNodeIndex -> AttributeGrammarMap -> ParseTreeIndexMap -> ProcessedIndexMap -> ProcessedNodes -> (ProcessedIndexMap, ProcessedNodes)
