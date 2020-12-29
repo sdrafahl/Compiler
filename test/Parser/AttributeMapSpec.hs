@@ -42,7 +42,7 @@ attributeSetParent = (AttributeSet (Data.Map.fromList [("name", (SynthesizedAttr
 attributeMapB = (AttributeGrammarMap (Data.Map.fromList [(NonTerm nonTermParent, attributeSetParent), (Term childTerm, attributeSetChildren)]))
 parseTreeB = (ParseTreeNode nonTermParent [(Leafe childTerm), (Leafe childTerm), (Leafe childTerm)])
 expectedProcessedIndexMapB =  ProcessedIndexMap (Data.Map.fromList [((TreeNodeIndex [0],"name"),StringAttribute "rob"),((TreeNodeIndex [0,0],"P"),StringAttribute "rob"),((TreeNodeIndex [0,1],"P"),StringAttribute "rob"),((TreeNodeIndex [0,2],"P"),StringAttribute "rob")])
------------------------------------------------------------- Case B
+------------------------------------------------------------ Case C
 
 nonTermParent0 = (NonTerminal "P0")
 nonTermParent1 = (NonTerminal "P1")
@@ -66,8 +66,29 @@ attributeMapC = (AttributeGrammarMap (Data.Map.fromList [(NonTerm nonTermParent0
 parseTreeC = (ParseTreeNode nonTermParent0 [(ParseTreeNode nonTermParent1 [(Leafe child3)])])
 expectedProcessedIndexMapC =  ProcessedIndexMap (Data.Map.fromList [((TreeNodeIndex [0],"name"),StringAttribute "parent 0"),((TreeNodeIndex [0,0],"childName"),StringAttribute "parent 2"),((TreeNodeIndex [0,0],"name"),StringAttribute "parent 0parent 2"),((TreeNodeIndex [0,0],"parentName"),StringAttribute "parent 0"),((TreeNodeIndex [0,0,0],"name"),StringAttribute "parent 2")])
 
+------------------------------------------------------------ Case D
+aNonTerm = (NonTerminal "A")
+bTermLeafe = (Terminal "C")
+cTermLeafe = (Terminal "D")
+aSynthKey = (NonTerm aNonTerm)
+leftKey = (Term bTermLeafe)
+rightKey = (Term cTermLeafe)
+
+combineMapsFunc :: [AttributeValue] -> AttributeValue
+combineMapsFunc vals = (Data.List.foldr (\(MapAttribute m) (MapAttribute m2) -> MapAttribute (Data.Map.union m m2)) (MapAttribute Data.Map.empty) vals)
+leftValue = (MapAttribute (Data.Map.fromList [("shane" ,StringAttribute "haskell")]))
+rightValue = (MapAttribute (Data.Map.fromList [("jack" ,StringAttribute "scala")]))
+attributeSetLeftChild = (AttributeSet (Data.Map.fromList [("n", (SynthesizedAttribute "n" leftValue))]))
+attributeSetRightChild = (AttributeSet (Data.Map.fromList [("n", (SynthesizedAttribute "n" rightValue))]))
+attributeSetParentD = (AttributeSet (Data.Map.fromList [("names", (SynthesizedAttributeEval "n" combineMapsFunc))]))
+attributeMapD = (AttributeGrammarMap (Data.Map.fromList  [(aSynthKey, attributeSetParentD), (leftKey, attributeSetLeftChild), (rightKey, attributeSetRightChild)]))
+parseTreeD = (ParseTreeNode aNonTerm [(Leafe bTermLeafe), (Leafe cTermLeafe)])
+expectedProcessedIndexMapD = ProcessedIndexMap (Data.Map.fromList [((TreeNodeIndex [0],"names"),MapAttribute (Data.Map.fromList [("jack",StringAttribute "scala"),("shane",StringAttribute "haskell")])),((TreeNodeIndex [0,0],"n"),MapAttribute (Data.Map.fromList [("shane",StringAttribute "haskell")])),((TreeNodeIndex [0,1],"n"),MapAttribute (Data.Map.fromList [("jack",StringAttribute "scala")]))])
+
+
 testParseTreeIndexMapA = ParseTreeIndexMap (Data.Map.fromList [(TreeNodeIndex [0],NonTerm (NonTerminal "List"))])
 testParseTreeIndexMapB = ParseTreeIndexMap (Data.Map.fromList [(TreeNodeIndex [0],NonTerm (NonTerminal "List")),(TreeNodeIndex [0,0],Term (Terminal "(")),(TreeNodeIndex [0,1],Term (Terminal ")"))])
+
 
 spec :: Spec
 spec = do
@@ -75,7 +96,8 @@ spec = do
     describe "evaluateParseTreeWithAttributes" $ do
       it "Should evaluate parse tree C" $ evaluateParseTreeWithAttributes parseTreeC attributeMapC `shouldBe` expectedProcessedIndexMapC
       it "Should evaluate parse tree A" $ evaluateParseTreeWithAttributes parseTreeA attributeMapA `shouldBe` expectedProcessedIndexMapA
-      it "Should evaluate parse tree B" $ evaluateParseTreeWithAttributes parseTreeB attributeMapB `shouldBe` expectedProcessedIndexMapB        
+      it "Should evaluate parse tree B" $ evaluateParseTreeWithAttributes parseTreeB attributeMapB `shouldBe` expectedProcessedIndexMapB
+      it "Should evaluate parse tree D with map of attributes" $ evaluateParseTreeWithAttributes parseTreeD attributeMapD `shouldBe` expectedProcessedIndexMapD
     describe "createParseTreeIndexMap" $ do
       it "Should evaluate a empty parse tree into ParseTreeIndexMap" $ createParseTreeIndexMap (ParseTreeNode listNonTerm []) `shouldBe` testParseTreeIndexMapA
       it "Should evaluate a parse tree with children into a ParseTreeIndexMap" $ createParseTreeIndexMap parseTreeA `shouldBe` testParseTreeIndexMapB
